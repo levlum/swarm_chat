@@ -1,0 +1,16 @@
+{
+  "name": "swarm_chat",
+  "version": "1.0.0",
+  "description": "change humanity by talking with it",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.2.0",
+    "socket.io-client": "^4.2.0"
+  }
+}
