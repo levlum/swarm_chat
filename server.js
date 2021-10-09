@@ -91,7 +91,9 @@ io.on('connection', function (socket) {
       }
 
       let drones = [];
-      for (const drone of Object.values(user_list)){ if (drone.swarm == user.swarm) drones.push(drone);};
+      if (user.swarm != undefined) {
+         for (const drone of Object.values(user_list)){ if (drone.swarm == user.swarm) drones.push(drone);};
+      }
       socket.emit('login', { user: user, question: question_data, drones: drones});
    }
 

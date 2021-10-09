@@ -11,7 +11,7 @@ $(function () {
    var $dronePage = $('.drone.page');    
    var $log = $(".log");     
    
-   $dronePage.show();
+   // $dronePage.show();
 
    var user;
    var proposals = [];
@@ -23,7 +23,15 @@ $(function () {
    var $currentInput = $usernameInput.focus();
 
    // Socket.io Objekt anlegen
-   var socket = io();
+   var socket = io('http://vhjk6s.myvserver.online:3000', {
+      reconnectionDelay: 1000,
+      reconnection: true,
+      reconnectionAttemps: 10,
+      transports: ['websocket'],
+      agent: false,
+      upgrade: false,
+      rejectUnauthorized: false
+   });
 
    // ==== Code für Benutzerschnittstelle
 
