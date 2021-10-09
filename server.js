@@ -18,7 +18,8 @@ var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
 server.listen(port, function () {
    // Wir geben einen Hinweis aus, dass der Webserer läuft.
-   console.log('Webserver läuft und hört auf Port %d', port);
+   const date = new Date();
+   console.log("\n" + date.toLocaleDateString()+ "  "+ date.toLocaleTimeString()+': Webserver läuft und hört auf Port %d', port);
 });
 
 // Hier teilen wir express mit, dass die öffentlichen HTML-Dateien
@@ -46,41 +47,51 @@ io.on('connection', function (socket) {
    function add_user(client_user) {
       // Benutzername wird in der aktuellen Socket-Verbindung gespeichert
       let user, swarm;
-      console.log("add_user", client_user);
+      // console.log("try adding client_user:", client_user, swarms[client_user.swarm]);
 
 
       //user allready logged in?
-      if (user_list[client_user.id] != undefined && client_user.name == user_list[client_user.id].name && client_user.swarm == user_list[client_user.id].swarm) {
+      if (user_list[client_user.private_id] != undefined 
+         && client_user.name == user_list[client_user.private_id].name
+         && client_user.swarm == user_list[client_user.private_id].swarm
+         && (!client_user.is_queen || (swarms[client_user.swarm] != undefined && swarms[client_user.swarm].queen == user_list[client_user.private_id]))) {
 
-         user = user_list[client_user.id];
+         user = user_list[client_user.private_id];
          swarm = swarms[user.swarm];
          socket.join(user.swarm);
-         // socket.user = user;
-         // socket.swarm = swarmname;
 
       } else {
          user = new shared.User(client_user);
-         user.id = client_user.id || socket.id;
-         user_list[user.id] = user;
+         user.private_id = client_user.private_id || socket.id;
+         user.id = client_user.id || io.engine.generateId();
+         user_list[user.private_id] = user;
          // socket.user = user;
          // socket.swarm = swarmname;
          socket.join(user.swarm);
-         addedUser = true;
 
          swarm = swarms[user.swarm];
-         user.is_queen = ((swarm == undefined || swarm.queen == undefined) && user.is_queen == undefined) 
-            || (user.is_queen != undefined && user.is_queen);
+         // console.log(swarm, (swarm == undefined || swarm.queen == undefined));
+         user.is_queen = (swarm == undefined || swarm.queen == undefined) && (user.is_queen == undefined 
+            || user.is_queen);
 
          if (!swarm) {
             swarm = new shared.Swarm(user.swarm);
-            if (user.is_queen) swarm.queen = user;
             swarms[user.swarm] = swarm;
          }
 
+         if (user.is_queen) swarm.queen = user;
+
          user.swarm = swarm.name;
          // Alle Clients informieren, dass ein neuer Benutzer da ist.
-         socket.to(user.swarm).emit('user joined', user);
+         socket.to(user.swarm).emit('user joined', user.for_external_use());
          console.log(`add ${(user.is_queen ? "queen" : "drone")} ${user.name} to swarm "${user.swarm}"`);
+      }
+
+
+      //save same user under new socket.id
+      if (user.private_id != socket.id && user.all_ids.indexOf(socket.id) < 0) {
+         user.all_ids.push(socket.id);
+         user_list[socket.id] = user;
       }
 
       // Dem Client wird die "login"-Nachricht geschickt, damit er weiß,
@@ -90,16 +101,28 @@ io.on('connection', function (socket) {
          question_data = { is_queen: true, message: swarm.question, start: swarm.start, proposals: swarms.proposals };
       }
 
-      let drones = [];
+      const drones = [];
+      const uniques = [];
       if (user.swarm != undefined) {
-         for (const drone of Object.values(user_list)){ if (drone.swarm == user.swarm) drones.push(drone);};
+         for (const drone of Object.values(user_list)){ 
+            if (drone != user && drone.connected && drone.swarm == user.swarm && uniques.indexOf(drone) < 0) {
+               uniques.push(drone);
+               drones.push(drone.for_external_use());
+            }
+         }
       }
+      addedUser = true;
+      user.connected = true;
+      // console.log("all drones:", drones);
       socket.emit('login', { user: user, question: question_data, drones: drones});
    }
 
-   socket.on('remove user', (user)=>{
-      console.log("logging out: "+user.name);
-      user_list[user.id] = undefined;
+   // Funktion, die darauf reagiert, wenn sich ein Benutzer abmeldet.
+   socket.on('remove user', (user) => {
+      console.log("logging out: " + user.name);
+      user = user_list[user.private_id];
+      user_list[user.private_id] = undefined;
+      for (let id of user.all_ids) user_list[id] = undefined;
       swarm = swarms[user.swarm];
       if (swarm && swarm.queen && swarm.queen.id == user.id) {
          //queen left the swarm!!
@@ -108,17 +131,35 @@ io.on('connection', function (socket) {
       }
       addedUser = false;
       socket.emit('logout');
-      socket.to(user.swarm).emit("removed user", user);
+      socket.to(user.swarm).emit("removed user", user.for_external_use());
    });
+
+   // Oder Benutzer müssen sich nicht explizit abmelden. "disconnect"
+   // tritt auch auf wenn der Benutzer den Client einfach schließt.
+   socket.on('disconnect', function () {
+      if (addedUser) {
+         addedUser = false;
+         leaving_user = user_list[socket.id];
+         leaving_user.connected = false;
+         console.log(leaving_user.name + " disconnected.");
+         // if (swarms[leaving_user.swarm].queen == leaving_user) {
+         //    swarms[leaving_user.swarm].queen = undefined;
+         // }
+         // users[socket.id] = undefined;
+         // Alle über den Abgang des Benutzers informieren
+         socket.to(leaving_user.swarm).emit('user left', leaving_user.for_external_use());
+      }
+   });
+
 
    // Funktion, die darauf reagiert, wenn ein Benutzer eine Nachricht schickt
    socket.on('new message', function (message, client_user) {
       console.log(`message from ${client_user.name}: ${message}`);
-      let user = user_list[client_user.id];
+      let user = user_list[client_user.private_id];
 
       if (!user){
          add_user(client_user);
-         user = user_list[client_user.id];
+         user = user_list[client_user.private_id];
       }
 
       if (user && user.is_queen) {
@@ -132,7 +173,7 @@ io.on('connection', function (socket) {
             username: user.name,
             is_queen: user.is_queen,
             message: message,
-            start: timer
+            start: timer 
          };
          socket.emit('start question', message_data);
             // console.log("try to broadcast to swarm " + user.swarm);
@@ -142,11 +183,12 @@ io.on('connection', function (socket) {
 
          //send answer
          setTimeout(()=>{
+            console.log(user, swarms[user.swarm])
             let swarm = swarms[user.swarm];
             swarm.proposals.sort(shared.proposal_sort);
-            proposals[0].user.rank = shared.Rank.FAMOUS;
-            socket.to(user.swarm).emit("answer", { user: proposals[0].user, answer:swarm.proposals[0].text});
-            socket.emit("answer", { user: proposals[0].user, answer: swarm.proposals[0].text });
+            swarm.proposals[0].user.rank = shared.Rank.FAMOUS;
+            socket.to(user.swarm).emit("answer", { user: swarm.proposals[0].user, answer:swarm.proposals[0].text});
+            socket.emit("answer", { user: swarm.proposals[0].user, answer: swarm.proposals[0].text });
 
             swarm.reset();
          }, shared.question_duration * 1000);
@@ -158,19 +200,20 @@ io.on('connection', function (socket) {
          //Send possible answer to all drones (and queen, but she will not vote).
          console.log("Send possible answer to all drones (and queen, but she will not vote).");
          let swarm = swarms[user.swarm];
-         let proposal = new shared.Proposal(user, message);
+         let proposal = new shared.Proposal(user.for_external_use(), message);
          swarm.proposals.push(proposal);
          // socket.emit("proposal", proposal);
          socket.to(user.swarm).emit("proposal", proposal);
       }
    });
+
    socket.on('proposal vote', (client_user, proposal, value) => {
       console.log(`proposal vote from ${client_user.name}: ${proposal.text} vote: ${value}`);
-      let user = user_list[client_user.id];
+      let user = user_list[client_user.private_id];
 
       if (!user) {
          add_user(client_user);
-         user = user_list[client_user.id];
+         user = user_list[client_user.private_id];
       }
 
       if (user && !user.is_queen){
@@ -206,13 +249,4 @@ io.on('connection', function (socket) {
    });
 
 
-   // Funktion, die darauf reagiert, wenn sich ein Benutzer abmeldet.
-   // Benutzer müssen sich nicht explizit abmelden. "disconnect"
-   // tritt auch auf wenn der Benutzer den Client einfach schließt.
-   socket.on('disconnect', function () {
-      if (addedUser) {
-         // Alle über den Abgang des Benutzers informieren
-         socket.broadcast.emit('user left', socket.username);
-      }
-   });
 });

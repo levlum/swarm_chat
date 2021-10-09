@@ -19,7 +19,7 @@ FAMOUS: Famous drones proposed sucsessfully an answer.
 **************
 Flags
 
-be careful 
+*be careful 
 Drones may set this flag, if in their opinion, this proposal is harmful against a minority.
 If at least 5% of all drones that voted on this propossal set this flag, it counts as a minority-proposal: Any negative vote sets the whole voting-sum to 0.
 Data Protection
