@@ -8,6 +8,7 @@ var app = express();
 var server = require('http').createServer(app);
 var swarms = {};
 var user_list = [];
+var public_ids = {};
 var timer;
 // var user_ids = 0;
 
@@ -93,6 +94,8 @@ io.on('connection', function (socket) {
          user.all_ids.push(socket.id);
          user_list[socket.id] = user;
       }
+      //save public id to find user
+      public_ids[user.id] = user;
 
       // Dem Client wird die "login"-Nachricht geschickt, damit er weiß,
       // dass er erfolgreich angemeldet wurde.
@@ -207,8 +210,9 @@ io.on('connection', function (socket) {
       }
    });
 
-   socket.on('proposal vote', (client_user, proposal, value) => {
-      console.log(`proposal vote from ${client_user.name}: ${proposal.text} vote: ${value}`);
+   socket.on('proposal vote', (vote, proposal) => {
+      let client_user = vote.user;
+      console.log(`proposal vote from ${client_user.name}: ${proposal.text} vote: ${vote.v}, type: ${vote.type}`);
       let user = user_list[client_user.private_id];
 
       if (!user) {
@@ -223,21 +227,20 @@ io.on('connection', function (socket) {
             if (p.text == proposal.text && p.user.name == proposal.user.name){
                let found = false;
                for (let v of p.votes){
-                  if (v.user_id == user.id) {
-                     v.value = value;
+                  if (v.user.id == user.id && v.type == vote.type) {
+                     v.v = vote.v;
                      found = true;
                      console.log("found old value");
                      break;
                   }
                }
                if (!found){
-                  p.votes.push({user_id: user.id, value:value});
+                  p.votes.push(vote);
                }
 
-               if (user.id != p.user.id && value > 0 && p.user.rank < shared.Rank.RESPONSIBLE){
+               if (user.id != p.user.id && vote.v > 0 && vote.type == undefined && p.user.rank < shared.Rank.RESPONSIBLE){
                   //the author of the proposal got a positive vote! promotion!
-                  p.user.rank = shared.Rank.RESPONSIBLE;
-                  
+                  public_ids[p.user.id].rank = shared.Rank.RESPONSIBLE;
                }
 
                socket.to(user.swarm).emit("proposal", p);

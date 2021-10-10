@@ -19,14 +19,16 @@ var rankData = [
 ];
 
 var Flags = {
-   STOP: {
-      short: "Stop", info: `<li class="li_img_stop"><strong>stop</strong><br>Drones may set a stop flag if they have the opinion, that this proposal has one of the following problems:
-            <ul><li style="list-style-image: none;">lie or scientifically obvious wrong statement.</li>
-             <li style="list-style-image: none;">Troll message with harmful content.</li></ul><br>
-             Every additional stop-flag on a proposal dubbles the negative influence.</li>`},
-   MINORITY: { 
-      short: "minority", info: `<li><strong>be careful</strong> <img><br>Drones may set this flag, if in their opinion, this proposal is harmful against a minority.<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Any negative vote sets the whole voting-sum to 0.</li>`}
+   STOP: 0,
+   MINORITY: 1
 }
+
+var flagData = [
+   { key: "STOP", img:"/images/stop.svg", info: `Set this only, if a proposal is a:<ul><li style="list-style-image: none;"><strong>lie</strong> or scientifically obvious <strong>wrong</strong> statement.</li>
+      <li style="list-style-image: none;"><strong>Troll</strong> message with harmful content.</li>
+      <li><strong>Not</strong> if you do not like the proposal.</li></ul>`},
+   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.`}
+]
 
 class User {
    constructor(obj_or_name, swarm) {
@@ -91,10 +93,20 @@ class Proposal {
       }
    }
 
-   value(){
+   value(type){
       let result = 0;
-      for (let v of this.votes) result += v.value;
-      return result;
+      let found_v = false;
+      for (let v of this.votes) if (v.type == type) {result += v.v; found_v = true;}
+      return found_v? result : undefined;
+   }
+}
+
+class Vote {
+   /** type = undefined or a flag*/
+   constructor(user, v, type){
+      this.user = user;
+      this.type = type;
+      this.v = v;
    }
 }
 
@@ -109,6 +121,7 @@ if (typeof module != "undefined") module.exports = {
    User: User,
    Swarm: Swarm,
    Proposal: Proposal,
+   Vote: Vote,
    proposal_sort: proposal_sort,
    Rank: Rank
 };

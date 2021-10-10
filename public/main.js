@@ -85,7 +85,11 @@ $(function () {
       <p>A drone can reach ${rankData.length} ranks:</p>
       <ol>${ranks_html}</ol>
       <h3>Flags</h3>
-      <ul>${flags_html.join("")}</ul>
+      <ul>
+         <li class="li_img_stop" ><strong>${flagData[Flags.STOP].key}</strong><br>${flagData[Flags.STOP].info}
+             Every additional stop-flag on a proposal dubbles the negative influence.</li><br>
+         <li><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
+      </ul>
       <h3>Data Protection</h3>
       <p>All data is saved in the swarm. There is no database on the server. No cookies are set. All known data of a drone is stored in the client browser's local storage. This data is being sent to the server in case of a server reboot. All data of past queen's questions and proposals are deleted immediately after sending the result to the swarm.
       In the case of contradicting information of drones, the server uses the information that is sent from more drones or in the case of equal numbers, from the drone that sent the data first.</p>
@@ -96,9 +100,10 @@ $(function () {
    });
 
    $(".md_b_close").on("click", e => { $("#modal_dialog").fadeOut(); })
-   $("#modal_dialog").on("click", e => { if (e.target.getAttribute("id") == "modal_dialog") $("#modal_dialog").fadeOut(); });
+   $("#modal_dialog").on("click", e => {if (e.target.getAttribute("id") == "modal_dialog") $("#modal_dialog").fadeOut(); });
    function modal_dialog(data) {
-      $(".md_window").css(data.style);
+      console.log(data);
+      if (data.style) $(".md_window").css(data.style);
       $(".md_header h3").text(data.title);
       $(".md_content").html(data.content);
       $(".md_buttons").empty().hide();
@@ -249,16 +254,18 @@ $(function () {
          $proposals.append($proposal);
          $proposal = $(`.proposal[data-index=${i}]`);
          // console.log($proposal);
+         for (const [key, flag] of Object.entries(Flags)){
+            if (p.value(flag) != undefined) $proposal.prepend(`<img src="${flagData[flag].img}">`);
+         }
          $proposal.find(".proposal_text").text(`${p.text} (${p.value()})`);
-         // $proposals.append(`<li><p>${p.text} (${p.value()})</p><button id="b_up_${i}">up</button><button id="b_down_${i}">down</button></li>`);
-
+         
          $proposal.find(".b_up").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", user, p, 1);
+            socket.emit("proposal vote", new Vote(user, 1), p);
          });
          $proposal.find(".b_down").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", user, p, -1);
+            socket.emit("proposal vote", new Vote(user, -1), p);
          });
 
          $proposal.find(".b_flags").on("click", e => {
@@ -269,7 +276,9 @@ $(function () {
 
             $(".flags_entry").on("click", e => { list.fadeOut(300, () => { list.remove(); }) });
             $(".b_flag_stop").on("click", e => {
-               modal_dialog({ title: "Stop flag", content: Flags.STOP.info });
+               modal_dialog({ title: "Stop flag", content: Flags.STOP.info, 
+                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 1, Flags.STOP), p); } }, { text: "cancel", action: () => { $("#modal_dialog").fadeOut();} }]
+               });
             });
          });
 
