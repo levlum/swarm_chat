@@ -35,6 +35,8 @@
       header {position: fixed; display: flex; top: 0; width: calc(100vw - 10vw); padding: 0.5em 5vw 0.5em 5vw; margin-bottom: 1em; gap: 1em; align-items: center; border-bottom: 1px solid var(--color_main_darkest); color: white ; background-color: var(--color_main);}
       header h2 {margin: 0;}
       .spaceer {flex: 1;}
+      .login {display: flex; align-items: center; gap: 1em; }
+      .login input {width: 7em;}
 
       .box {padding: 0 1em; background-color: var(--color_main_lightest); border-radius: 7px; border: 1px solid var(--color_main);}
 
@@ -78,6 +80,10 @@
 
       @media (hover: hover) {
          button:hover:enabled       { background-color: var(--color_main_light);}
+      }
+      @media (max-width: 600px) {
+         .main_right {display: none;}
+         .login {display: none; align-items: center; flex-direction: column;}
       }
    </style>
 </head>
@@ -128,12 +134,15 @@
    </div>
 
    <header>
-      <label class="title" for="usernameInput">Name?</label>
-      <input id="usernameInput" type="text" maxlength="14" />
-      
-      <label class="title" for="swarmnameInput">Swarm?</label>
-      <input id="swarmnameInput" type="text" maxlength="14" />
-      <button class="b_login">join</button>
+      <button><img src="/images/hamburger.svg" style="width: 1.5em;"></button>
+      <div class="login">
+         <label class="title" for="usernameInput">Name?</label>
+         <input id="usernameInput" type="text" maxlength="14" />
+
+         <label class="title" for="swarmnameInput">Swarm?</label>
+         <input id="swarmnameInput" type="text" maxlength="14" />
+         <button class="b_login">join</button>
+      </div>
       <div class="spaceer"></div>
       <button class="b_info"><img src="/images/info.png" style="width: 2em;"></button>
       <h2>Lev's Swarm Chat</h2>
