@@ -89,15 +89,37 @@ class Proposal {
       } else {
          this.user = obj_or_user;
          this.text = text;
-         this.votes = [];
+         this.votes = {}; //key is type of vote
       }
    }
 
+   id() { return this.user.id+this.text; }
+
+   /** type = undefined:proposal vote, flag: votes for that flag, "end_result": result for the proposal including all votes and flags */
    value(type){
       let result = 0;
-      let found_v = false;
-      for (let v of this.votes) if (v.type == type) {result += v.v; found_v = true;}
-      return found_v? result : undefined;
+      if (type == "end_result"){
+         result = this.value();
+         const stop = this.value(Flags.STOP);
+         const minor = this.value(Flags.MINORITY);
+         if (stop) result -= Math.pow(2,stop);
+         if (minor && minor >= this.votes[undefined].length / 20) {
+            let has_minus = false;
+            for (let v of this.votes[undefined]) if (v.v < 0) {has_minus = true; break;}
+            return has_minus? 0 : result;
+         }
+         return result;
+
+      } else if (this.votes[type]){
+         for (let v of this.votes[type]) result += v.v;
+         return result;
+
+      } else if (type == undefined) {
+         return 0;
+
+      } else {
+         return undefined;
+      }
    }
 }
 
@@ -111,8 +133,8 @@ class Vote {
 }
 
 function proposal_sort(a, b) {
-   if (a.value() < b.value()) return 1;
-   if (a.value() > b.value()) return -1;
+   if (a.value("end_result") < b.value("end_result")) return 1;
+   if (a.value("end_result") > b.value("end_result")) return -1;
    return 0;
 }
 

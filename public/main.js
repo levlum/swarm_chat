@@ -88,7 +88,7 @@ $(function () {
       <ul>
          <li class="li_img_stop" ><strong>${flagData[Flags.STOP].key}</strong><br>${flagData[Flags.STOP].info}
              Every additional stop-flag on a proposal dubbles the negative influence.</li><br>
-         <li><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
+         <li class="li_img_minority" ><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
       </ul>
       <h3>Data Protection</h3>
       <p>All data is saved in the swarm. There is no database on the server. No cookies are set. All known data of a drone is stored in the client browser's local storage. This data is being sent to the server in case of a server reboot. All data of past queen's questions and proposals are deleted immediately after sending the result to the swarm.
@@ -99,7 +99,7 @@ $(function () {
       });
    });
 
-   $(".md_b_close").on("click", e => { $("#modal_dialog").fadeOut(); })
+   $(".md_b_close").on("click", e => { $("#modal_dialog").fadeOut(); });
    $("#modal_dialog").on("click", e => {if (e.target.getAttribute("id") == "modal_dialog") $("#modal_dialog").fadeOut(); });
    function modal_dialog(data) {
       console.log(data);
@@ -110,9 +110,10 @@ $(function () {
       if (data.buttons) {
          $(".md_buttons").show();
          for (let b of data.buttons) {
-            let new_button = $(`<button>${b.text}</button>`).on("click", b.action);
+            let new_button = $(`<button class="md_button">${b.text}</button>`).on("click", b.action);
             $(".md_buttons").append(new_button);
          }
+         $(".md_button").on("click", e => { $("#modal_dialog").fadeOut(); });
       }
       $("#modal_dialog").fadeIn();
    }
@@ -244,28 +245,45 @@ $(function () {
    }
 
    function update_proposal_html() {
-      $proposals.empty();
+      // $proposals.empty();
 
       // console.log(proposals);
-      proposals.sort(proposal_sort);
+      // proposals.sort(proposal_sort);
 
       proposals.forEach((p, i) => {
-         let $proposal = $($("#temp_proposal").html()).attr("data-index", i);
-         $proposals.append($proposal);
-         $proposal = $(`.proposal[data-index=${i}]`);
+         let $proposal = $(`.proposal[data-id="${p.id()}"]`);
+         if ($proposal.length == 0) {
+            $proposals.append($($("#temp_proposal").html()).attr("data-id", p.id()));
+            $proposal = $(`.proposal[data-id="${p.id()}"]`);
+            console.log("created new proposal.");
+         } else {
+            console.log("found old proposal.", $("#temp_proposal").eq(0).html());
+            $proposal.empty();
+            $proposal.append($("#temp_proposal").eq(0).html());
+         }
+         
          // console.log($proposal);
          for (const [key, flag] of Object.entries(Flags)){
-            if (p.value(flag) != undefined) $proposal.prepend(`<img src="${flagData[flag].img}">`);
+            if (p.value(flag) != undefined) {
+               let $support = $($("#temp_support").html()).attr("data-type", flag);
+               $proposal.prepend($support);
+               $proposal.prepend(`<img src="${flagData[flag].img}">(${p.value(flag)})`);
+            }
          }
-         $proposal.find(".proposal_text").text(`${p.text} (${p.value()})`);
+         let value = p.value("end_result");
+         $proposal.css({"margin-left": value+"em"});
+         $proposal.find(".proposal_text").text(`${p.text} (${value})`);
+         $proposal.find(".proposal_text").after($("#temp_support").html());
          
          $proposal.find(".b_up").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", new Vote(user, 1), p);
+            let type = $(e.target).closest(".support").data("type");
+            socket.emit("proposal vote", new Vote(user, 1, type), p);
          });
          $proposal.find(".b_down").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", new Vote(user, -1), p);
+            let type = $(e.target).closest(".support").data("type");
+            socket.emit("proposal vote", new Vote(user, -1, type), p);
          });
 
          $proposal.find(".b_flags").on("click", e => {
@@ -276,17 +294,24 @@ $(function () {
 
             $(".flags_entry").on("click", e => { list.fadeOut(300, () => { list.remove(); }) });
             $(".b_flag_stop").on("click", e => {
-               modal_dialog({ title: "Stop flag", content: Flags.STOP.info, 
-                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 1, Flags.STOP), p); } }, { text: "cancel", action: () => { $("#modal_dialog").fadeOut();} }]
+               modal_dialog({ title: "Stop flag", content: flagData[Flags.STOP].info, 
+                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.STOP), p); } }, { text: "cancel" }]
+               });
+            });
+
+            $(".b_flag_minority").on("click", e => {
+               modal_dialog({
+                  title: "Minority flag", content: flagData[Flags.MINORITY].info,
+                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.MINORITY), p); } }, { text: "cancel" }]
                });
             });
          });
 
-         for (let v of p.votes) {
+         for (const [key, v] of Object.entries (p.votes)) {
             if (v.user_id == user.id) {
                //allready voted
-               if (v.value == 1) $proposal.find(".b_up").prop('disabled', true);
-               else $proposal.find(".b_down").prop('disabled', true);
+               if (v.value == 1) $proposal.find(`.support${key == undefined? "" :`[data-type="${key}"]`} .b_up`).prop('disabled', true);
+               else $proposal.find(`.support${key == undefined ? "" : `[data-type="${key}"]`} .b_down`).prop('disabled', true);
             }
          }
       });

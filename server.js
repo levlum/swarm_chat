@@ -186,7 +186,7 @@ io.on('connection', function (socket) {
 
          //send answer
          setTimeout(()=>{
-            console.log(user, swarms[user.swarm])
+            // console.log(user, swarms[user.swarm])
             let swarm = swarms[user.swarm];
             swarm.proposals.sort(shared.proposal_sort);
             swarm.proposals[0].user.rank = shared.Rank.FAMOUS;
@@ -201,9 +201,9 @@ io.on('connection', function (socket) {
          //DRONES PROPOSAL
 
          //Send possible answer to all drones (and queen, but she will not vote).
-         console.log("Send possible answer to all drones (and queen, but she will not vote).");
          let swarm = swarms[user.swarm];
          let proposal = new shared.Proposal(user.for_external_use(), message);
+         console.log("Send possible answer to all drones (and queen, but she will not vote): " + proposal.text);
          swarm.proposals.push(proposal);
          // socket.emit("proposal", proposal);
          socket.to(user.swarm).emit("proposal", proposal);
@@ -226,16 +226,20 @@ io.on('connection', function (socket) {
          for (let p of swarm.proposals){
             if (p.text == proposal.text && p.user.name == proposal.user.name){
                let found = false;
-               for (let v of p.votes){
-                  if (v.user.id == user.id && v.type == vote.type) {
-                     v.v = vote.v;
-                     found = true;
-                     console.log("found old value");
-                     break;
+               let votes_list = p.votes[vote.type];
+               if (votes_list) {
+                  for (const v of votes_list){
+                     if (v.user.id == user.id) {
+                        v.v = vote.v;
+                        found = true;
+                        console.log("found old value");
+                        break;
+                     }
                   }
                }
                if (!found){
-                  p.votes.push(vote);
+                  if (!p.votes[vote.type]) p.votes[vote.type] = [];
+                  p.votes[vote.type].push(vote);
                }
 
                if (user.id != p.user.id && vote.v > 0 && vote.type == undefined && p.user.rank < shared.Rank.RESPONSIBLE){
