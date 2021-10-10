@@ -11,7 +11,7 @@ $(function () {
    var $dronePage = $('.drone.page');    
    var $log = $(".log");     
    
-   $dronePage.show();
+   // $dronePage.show();
 
    var user;
    var proposals = [];
@@ -23,7 +23,15 @@ $(function () {
    var $currentInput = $usernameInput.focus();
 
    // Socket.io Objekt anlegen
-   var socket = io();
+   var socket = io('http://vhjk6s.myvserver.online:3000', {
+      reconnectionDelay: 1000,
+      reconnection: true,
+      reconnectionAttemps: 10,
+      transports: ['websocket'],
+      agent: false,
+      upgrade: false,
+      rejectUnauthorized: false
+   });
 
    // ==== Code für Benutzerschnittstelle
 
@@ -62,9 +70,11 @@ $(function () {
    });
 
    $(".b_info").on("click", e => {
-      let ranks_html = [];
-      for (const [rank, val] of Object.entries(Rank)) { ranks_html.push(`<li><strong>${rank}</strong>: ${val.info}</li>`); };
+      let ranks_html = "";
+      for (const rank of rankData) { ranks_html += `<li><strong>${rank.key}</strong>: ${rank.info}</li>`; };
 
+      let flags_html = [];
+      for (const [flag, val] of Object.entries(Flags)) { flags_html.push(`${val.info}`); };
       modal_dialog({
          title: "Rules and Principles",
          content: `
@@ -72,12 +82,10 @@ $(function () {
       <p>A swarm has many drones and only one queen. The queen's interface has a mask to ask a question. Only drones can propose answers and discuss the matter privately for a short time. Afterwards, one answer is presented to the queen.</p>
       <p>Don't read queen's questions as questions to you personally. All questions are addressed to the swarm. Think as a drone, a borg member of a hive-mind. An example: If the queen asks for your name: "What is your name?" Then she wants to know the name of the swarm. The name, the swarm gives itself. The swarm chat is best used with more than seven drones. </p>
       <h3>Ranks</h3>
-      <p>A drone can reach ${ranks_html.length} ranks:</p>
-      <ol>${ranks_html.join("")}</ol>
+      <p>A drone can reach ${rankData.length} ranks:</p>
+      <ol>${ranks_html}</ol>
       <h3>Flags</h3>
-      <ul><br>
-         <li><strong>be careful</strong> <img><br>Drones may set this flag, if in their opinion, this proposal is harmful against a minority.<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Any negative vote sets the whole voting-sum to 0.</li>
-      </ul>
+      <ul>${flags_html.join("")}</ul>
       <h3>Data Protection</h3>
       <p>All data is saved in the swarm. There is no database on the server. No cookies are set. All known data of a drone is stored in the client browser's local storage. This data is being sent to the server in case of a server reboot. All data of past queen's questions and proposals are deleted immediately after sending the result to the swarm.
       In the case of contradicting information of drones, the server uses the information that is sent from more drones or in the case of equal numbers, from the drone that sent the data first.</p>
@@ -184,6 +192,7 @@ $(function () {
    // Protokollnachricht zum Chat-Protokoll anfügen
    function log(message) {
       $log.append(`<p>${message}</p>`);
+      $log.scrollTop = $log.scrollHeight;
    }
 
    // Chat-Nachricht zum Chat-Protokoll anfügen
@@ -240,7 +249,7 @@ $(function () {
          $proposals.append($proposal);
          $proposal = $(`.proposal[data-index=${i}]`);
          // console.log($proposal);
-         $(".proposal_text").text(`${p.text} (${p.value()})`);
+         $proposal.find(".proposal_text").text(`${p.text} (${p.value()})`);
          // $proposals.append(`<li><p>${p.text} (${p.value()})</p><button id="b_up_${i}">up</button><button id="b_down_${i}">down</button></li>`);
 
          $proposal.find(".b_up").on("click", e => {
@@ -274,6 +283,13 @@ $(function () {
       });
    }
 
+   function append_to_userlist(drone){
+      let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.is_queen ? "queen" : "bee"}.png"></div>`);
+      $joined_user_div.data("user", drone);
+      $(".swarm_list").append($joined_user_div);
+      log(drone.name + ' joined as ' + (drone.is_queen ? "queen" : "drone"));
+   }
+
    // ==== Code für Socket.io Events
 
    socket.on("connect", () => {
@@ -288,7 +304,7 @@ $(function () {
    // Server schickt "login": Anmeldung war erfolgreich
    socket.on('login', function (data) {
       user = data.user;
-      console.log("logged in", user);
+      // console.log("logged in", user);
       log(`${user.name}, welcome to the swarm "${user.swarm}"`);
       logged_in = true;
       toggle_b_login();
@@ -297,9 +313,9 @@ $(function () {
 
       $(".swarm.title").text(`You are ${user.is_queen ? "the queen of" : "a drone in"} the swarm ${user.swarm}`);
       $(".swarm_list").empty();
-      for (let drone of data.drones) {
-         $(".swarm_list").append(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.is_queen? "queen" : "bee"}.png"></div>`);
-      }
+      append_to_userlist(user);
+      for (let drone of data.drones) append_to_userlist (drone);
+
 
       if (user.is_queen) {
          $queenPage.fadeIn();
@@ -343,14 +359,16 @@ $(function () {
    // Server schickt "user joined": Neuen Benutzer im Chat-Protokoll anzeigen
    socket.on('user joined', function (joined_user) {
       if ($(`.list_entry[data-user_id="${joined_user.id}"]`).length == 0){
-         $(".swarm_list").append(`<div class="list_entry" data-user_id="${joined_user.id}">${joined_user.name}<img src="images/${joined_user.is_queen ? "queen" : "bee"}.png"></div>`);
-         log(joined_user.name + ' joined as ' + (joined_user.is_queen? "queen": "drone"));
+         append_to_userlist (joined_user);
       }
    });
 
    // Server schickt "user left": Benutzer, der gegangen ist, im Chat-Protokoll anzeigen
-   socket.on('user left', function (data) {
-      log(data + ' left');
+   socket.on('user left', function (leaving_user) {
+      const $leaving_user_div = $(`.list_entry[data-user_id="${leaving_user.id}"]`);
+      log(leaving_user.name + " left");
+      console.log("user left:",leaving_user, $leaving_user_div);
+      $leaving_user_div.remove();
    });
 
    socket.on("connect_error", (err) => {

@@ -1,12 +1,22 @@
 const question_duration = 60;
 
 var Rank = {
-   INVISIBLE: {val:0, info:"A drone starts invisible."},
-   VISIBLE: { val: 1, info: "Every drone, that supported an accepted proposal gets this promotion." },
-   RESPONSIBLE: { val: 2, info: "A responsible drone flagged succsessfully a proposal." },
-   RESPECTED: { val: 3, info: "A respected drone created a proposal that got at least 5% of the votes." },
-   FAMOUS: { val: 5, info: "Famous drones proposed sucsessfully an answer." }
+   INVISIBLE: 0,
+   VISIBLE: 1,
+   RESPONSIBLE: 2,
+   RESPECTED: 3,
+   FAMOUS: 4,
+   QUEEN: 5
 }
+
+var rankData = [
+   { key:"INVISIBLE", info: "A drone starts invisible." },
+   { key:"VISIBLE", info: "Every drone, that supported an accepted proposal gets this promotion." },
+   { key:"RESPONSIBLE", info: "A responsible drone flagged succsessfully a proposal." },
+   { key:"RESPECTED", info: "A respected drone created a proposal that got at least 5% of the votes." },
+   { key:"FAMOUS", info: "Famous drones proposed sucsessfully an answer." },
+   { key:"QUEEN", info: "There is only one Queen." }
+];
 
 var Flags = {
    STOP: {
@@ -14,7 +24,8 @@ var Flags = {
             <ul><li style="list-style-image: none;">lie or scientifically obvious wrong statement.</li>
              <li style="list-style-image: none;">Troll message with harmful content.</li></ul><br>
              Every additional stop-flag on a proposal dubbles the negative influence.</li>`},
-   MINORITY: {short: "minrity", info: ``}
+   MINORITY: { 
+      short: "minority", info: `<li><strong>be careful</strong> <img><br>Drones may set this flag, if in their opinion, this proposal is harmful against a minority.<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Any negative vote sets the whole voting-sum to 0.</li>`}
 }
 
 class User {
@@ -22,16 +33,32 @@ class User {
       if (obj_or_name.name){
          this.name = obj_or_name.name;
          this.swarm = obj_or_name.swarm;
-         this.id = obj_or_name.id;
+         this.private_id = obj_or_name.private_id;
          this.is_queen = obj_or_name.is_queen;
       } else {
          this.name = obj_or_name;
          this.swarm = swarm;
-         this.id;
+         this.private_id;
          this.is_queen;
       }
 
-      this.rank = Rank.INVISIBLE;
+      this.id;
+      this.rank = Rank.INVISIBLE.key;
+      this.all_ids = []; //the fist socket.id a user gets, is his id. user saves that in local storage. if socket.id changes, those ids are stored here, to find user easily
+      this.connected = false;
+   }
+
+   for_external_use(){
+      const result = {};
+      for (const [key, value] of Object.entries(this)){
+         switch (key){
+            case "private_id": break;
+            case "all_ids": break;
+            case "connected": break;
+            default: result[key] = value;
+         }
+      }
+      return result;
    }
 }
 
