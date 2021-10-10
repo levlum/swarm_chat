@@ -7,17 +7,17 @@ $(function () {
    var $proposals = $('.proposals');           // Liste mit Chat-Nachrichten
    var $queensMessage = $('#queensMessage');   // Eingabefeld für Chat-Nachricht
    var $droneMessage = $('#droneMessage');   // Eingabefeld für Chat-Nachricht     // Login-Seite
-   var $queenPage = $('.queen.page');          
-   var $dronePage = $('.drone.page');    
-   var $log = $(".log");     
-   
+   var $queenPage = $('.queen.page');
+   var $dronePage = $('.drone.page');
+   var $log = $(".log");
+
    // $dronePage.show();
 
    var user;
    var proposals = [];
    var logged_in = false;
    // var is_queen = false;                  
-   var connected = false;                   
+   var connected = false;
 
    // Eingabefeld für Benutzername erhält den Fokus
    var $currentInput = $usernameInput.focus();
@@ -38,7 +38,7 @@ $(function () {
    // localStorage.removeItem("swarmchat_user");
 
    //load data from local storage
-   if (localStorage.swarmchat_user != undefined){
+   if (localStorage.swarmchat_user != undefined) {
       // console.log(localStorage.swarmchat_user);
       user = JSON.parse(localStorage.swarmchat_user);
       $usernameInput.val(user.name);
@@ -85,7 +85,11 @@ $(function () {
       <p>A drone can reach ${rankData.length} ranks:</p>
       <ol>${ranks_html}</ol>
       <h3>Flags</h3>
-      <ul>${flags_html.join("")}</ul>
+      <ul>
+         <li class="li_img_stop" ><strong>${flagData[Flags.STOP].key}</strong><br>${flagData[Flags.STOP].info}
+             Every additional stop-flag on a proposal dubbles the negative influence.</li><br>
+         <li class="li_img_minority" ><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
+      </ul>
       <h3>Data Protection</h3>
       <p>All data is saved in the swarm. There is no database on the server. No cookies are set. All known data of a drone is stored in the client browser's local storage. This data is being sent to the server in case of a server reboot. All data of past queen's questions and proposals are deleted immediately after sending the result to the swarm.
       In the case of contradicting information of drones, the server uses the information that is sent from more drones or in the case of equal numbers, from the drone that sent the data first.</p>
@@ -94,20 +98,22 @@ $(function () {
          style: { "margin-top": "5em", width: "80vw" }
       });
    });
-   
-   $(".md_b_close").on("click", e => { $("#modal_dialog").fadeOut(); })
-   $("#modal_dialog").on("click", e => { if (e.target.getAttribute("id")=="modal_dialog") $("#modal_dialog").fadeOut();});
-   function modal_dialog(data){
-      $(".md_window").css(data.style);
+
+   $(".md_b_close").on("click", e => { $("#modal_dialog").fadeOut(); });
+   $("#modal_dialog").on("click", e => {if (e.target.getAttribute("id") == "modal_dialog") $("#modal_dialog").fadeOut(); });
+   function modal_dialog(data) {
+      console.log(data);
+      if (data.style) $(".md_window").css(data.style);
       $(".md_header h3").text(data.title);
       $(".md_content").html(data.content);
       $(".md_buttons").empty().hide();
-      if (data.buttons){
+      if (data.buttons) {
          $(".md_buttons").show();
-         for (let b of data.buttons){
-            let new_button = $(`<button>${b.text}</button>`).on("click", b.action);
+         for (let b of data.buttons) {
+            let new_button = $(`<button class="md_button">${b.text}</button>`).on("click", b.action);
             $(".md_buttons").append(new_button);
          }
+         $(".md_button").on("click", e => { $("#modal_dialog").fadeOut(); });
       }
       $("#modal_dialog").fadeIn();
    }
@@ -123,13 +129,13 @@ $(function () {
       }
    }
 
-   function login(){
+   function login() {
       // Benutzername aus Eingabefeld holen (ohne Leerzeichen am Anfang oder Ende).
       username = $usernameInput.val().trim();
       swarmname = $swarmnameInput.val().trim();
-      if (localStorage.swarmchat_user){
+      if (localStorage.swarmchat_user) {
          let stored_user = JSON.parse(localStorage.swarmchat_user);
-         if (stored_user.name != username || stored_user.swarm != swarmname){
+         if (stored_user.name != username || stored_user.swarm != swarmname) {
             localStorage.removeItem("swarmchat_user");
             logged_in = false;
 
@@ -168,7 +174,7 @@ $(function () {
       }
    }
 
-   function start_timer(start){
+   function start_timer(start) {
       $(".timer").fadeIn();
       console.log("start", start);
       const elapsed = (Date.now() - start);
@@ -179,13 +185,13 @@ $(function () {
       let draw = SVG.adopt($(".timer")[0]);
       // draw.rect(100,5).fill("none").stroke({width:2, color: "red"});
       let rects = draw.group();
-      for (let i=0; i< 10; i++){
+      for (let i = 0; i < 10; i++) {
          rects.rect(9, 5).move(i * 10, 0).radius(1).fill("var(--color_main_lighter)").stroke({ width: 0.3, color: "var(--color_main)" });
       }
-      let bar = draw.rect(left_duration/600, 5).fill("var(--color_main_light)");
-      bar.maskWith (rects.clone());
+      let bar = draw.rect(left_duration / 600, 5).fill("var(--color_main_light)");
+      bar.maskWith(rects.clone());
 
-      bar.animate(left_duration).ease("-").width(0).after(() => { $(".timer").empty()});
+      bar.animate(left_duration).ease("-").width(0).after(() => { $(".timer").empty() });
    }
 
 
@@ -197,9 +203,9 @@ $(function () {
 
    // Chat-Nachricht zum Chat-Protokoll anfügen
    function start_queens_question(data) {
-      if (data.is_queen){
+      if (data.is_queen) {
 
-         log("queens question: "+ data.message);
+         log("queens question: " + data.message);
          $(".queen.question").text(`Queen's Question: ${data.message}`);
          $(".swarm.answer").fadeIn();
          if (!user.is_queen) $dronePage.fadeIn();
@@ -209,7 +215,7 @@ $(function () {
          $proposals.empty();
          start_timer(data.start);
 
-      } 
+      }
       // else {
       //    var $usernameDiv = $('<span class="username"/>').text(data.username);
       //    var $messageBodyDiv = $('<span class="messageBody">').text(data.message);
@@ -219,7 +225,7 @@ $(function () {
       // }
    }
 
-   function add_proposal (proposal) {
+   function add_proposal(proposal) {
       if (user.is_queen) return;
 
       //existing proposal?
@@ -239,51 +245,79 @@ $(function () {
    }
 
    function update_proposal_html() {
-      $proposals.empty();
+      // $proposals.empty();
 
       // console.log(proposals);
-      proposals.sort(proposal_sort);
+      // proposals.sort(proposal_sort);
 
-      proposals.forEach ( (p,i)=> {
-         let $proposal = $($("#temp_proposal").html()).attr("data-index", i);
-         $proposals.append($proposal);
-         $proposal = $(`.proposal[data-index=${i}]`);
+      proposals.forEach((p, i) => {
+         let $proposal = $(`.proposal[data-id="${p.id()}"]`);
+         if ($proposal.length == 0) {
+            $proposals.append($($("#temp_proposal").html()).attr("data-id", p.id()));
+            $proposal = $(`.proposal[data-id="${p.id()}"]`);
+            console.log("created new proposal.");
+         } else {
+            console.log("found old proposal.", $("#temp_proposal").eq(0).html());
+            $proposal.empty();
+            $proposal.append($("#temp_proposal").eq(0).html());
+         }
+         
          // console.log($proposal);
-         $proposal.find(".proposal_text").text(`${p.text} (${p.value()})`);
-         // $proposals.append(`<li><p>${p.text} (${p.value()})</p><button id="b_up_${i}">up</button><button id="b_down_${i}">down</button></li>`);
-
+         for (const [key, flag] of Object.entries(Flags)){
+            if (p.value(flag) != undefined) {
+               let $support = $($("#temp_support").html()).attr("data-type", flag);
+               $proposal.prepend($support);
+               $proposal.prepend(`<img src="${flagData[flag].img}">(${p.value(flag)})`);
+            }
+         }
+         let value = p.value("end_result");
+         $proposal.css({"margin-left": value+"em"});
+         $proposal.find(".proposal_text").text(`${p.text} (${value})`);
+         $proposal.find(".proposal_text").after($("#temp_support").html());
+         
          $proposal.find(".b_up").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", user, p, 1);
+            let type = $(e.target).closest(".support").data("type");
+            socket.emit("proposal vote", new Vote(user, 1, type), p);
          });
          $proposal.find(".b_down").on("click", e => {
             $(e.target).prop('disabled', true);
-            socket.emit("proposal vote", user, p, -1);
+            let type = $(e.target).closest(".support").data("type");
+            socket.emit("proposal vote", new Vote(user, -1, type), p);
          });
 
          $proposal.find(".b_flags").on("click", e => {
-            let list = $($("#temp_flags_list").html(), {id: "l_flags_"+i});
+            let list = $($("#temp_flags_list").html(), { id: "l_flags_" + i });
             // list.offset($(e.target).offset());
             $(e.target.parentElement).append(list);
-            list.css({left: $(e.target).position().left});
+            list.css({ left: $(e.target).position().left });
 
-            $(".flags_entry").on("click", e => { list.fadeOut(300, ()=>{list.remove();})});
+            $(".flags_entry").on("click", e => { list.fadeOut(300, () => { list.remove(); }) });
             $(".b_flag_stop").on("click", e => {
-               modal_dialog({title:"Stop flag", content:`Make shure that you do see `});
+               modal_dialog({ title: "Stop flag", content: flagData[Flags.STOP].info, 
+                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.STOP), p); } }, { text: "cancel" }]
+               });
+            });
+
+            $(".b_flag_minority").on("click", e => {
+               modal_dialog({
+                  title: "Minority flag", content: flagData[Flags.MINORITY].info,
+                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.MINORITY), p); } }, { text: "cancel" }]
+               });
             });
          });
 
-         for (let v of p.votes) {
+         for (const [key, v] of Object.entries (p.votes)) {
             if (v.user_id == user.id) {
                //allready voted
-               if (v.value == 1) $proposal.find(".b_up").prop('disabled', true);
-               else $proposal.find(".b_down").prop('disabled', true);
+               if (v.value == 1) $proposal.find(`.support${key == undefined? "" :`[data-type="${key}"]`} .b_up`).prop('disabled', true);
+               else $proposal.find(`.support${key == undefined ? "" : `[data-type="${key}"]`} .b_down`).prop('disabled', true);
             }
          }
       });
    }
 
-   function append_to_userlist(drone){
+   function append_to_userlist(drone) {
       let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.is_queen ? "queen" : "bee"}.png"></div>`);
       $joined_user_div.data("user", drone);
       $(".swarm_list").append($joined_user_div);
@@ -314,15 +348,15 @@ $(function () {
       $(".swarm.title").text(`You are ${user.is_queen ? "the queen of" : "a drone in"} the swarm ${user.swarm}`);
       $(".swarm_list").empty();
       append_to_userlist(user);
-      for (let drone of data.drones) append_to_userlist (drone);
+      for (let drone of data.drones) append_to_userlist(drone);
 
 
       if (user.is_queen) {
          $queenPage.fadeIn();
-         $("body").css({ "background-color": "var(--color_queen)"});
+         $("body").css({ "background-color": "var(--color_queen)" });
          $(".queen.question").text("Please send a question to the swarm!");
       } else {
-         
+
          if (data.question) {
             start_queens_question(data.question);
          }
@@ -330,7 +364,7 @@ $(function () {
    });
 
    socket.on('logout', () => {
-      log(user.name+" left");
+      log(user.name + " left");
       toggle_b_login();
       $(".b_login").text("join");
       $("body").css({ "background-color": "unset" });
@@ -358,8 +392,8 @@ $(function () {
 
    // Server schickt "user joined": Neuen Benutzer im Chat-Protokoll anzeigen
    socket.on('user joined', function (joined_user) {
-      if ($(`.list_entry[data-user_id="${joined_user.id}"]`).length == 0){
-         append_to_userlist (joined_user);
+      if ($(`.list_entry[data-user_id="${joined_user.id}"]`).length == 0) {
+         append_to_userlist(joined_user);
       }
    });
 
@@ -367,7 +401,7 @@ $(function () {
    socket.on('user left', function (leaving_user) {
       const $leaving_user_div = $(`.list_entry[data-user_id="${leaving_user.id}"]`);
       log(leaving_user.name + " left");
-      console.log("user left:",leaving_user, $leaving_user_div);
+      console.log("user left:", leaving_user, $leaving_user_div);
       $leaving_user_div.remove();
    });
 

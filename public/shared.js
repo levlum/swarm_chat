@@ -19,14 +19,16 @@ var rankData = [
 ];
 
 var Flags = {
-   STOP: {
-      short: "Stop", info: `<li class="li_img_stop"><strong>stop</strong><br>Drones may set a stop flag if they have the opinion, that this proposal has one of the following problems:
-            <ul><li style="list-style-image: none;">lie or scientifically obvious wrong statement.</li>
-             <li style="list-style-image: none;">Troll message with harmful content.</li></ul><br>
-             Every additional stop-flag on a proposal dubbles the negative influence.</li>`},
-   MINORITY: { 
-      short: "minority", info: `<li><strong>be careful</strong> <img><br>Drones may set this flag, if in their opinion, this proposal is harmful against a minority.<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Any negative vote sets the whole voting-sum to 0.</li>`}
+   STOP: 0,
+   MINORITY: 1
 }
+
+var flagData = [
+   { key: "STOP", img:"/images/stop.svg", info: `Set this only, if a proposal is a:<ul><li style="list-style-image: none;"><strong>lie</strong> or scientifically obvious <strong>wrong</strong> statement.</li>
+      <li style="list-style-image: none;"><strong>Troll</strong> message with harmful content.</li>
+      <li><strong>Not</strong> if you do not like the proposal.</li></ul>`},
+   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.`}
+]
 
 class User {
    constructor(obj_or_name, swarm) {
@@ -87,20 +89,52 @@ class Proposal {
       } else {
          this.user = obj_or_user;
          this.text = text;
-         this.votes = [];
+         this.votes = {}; //key is type of vote
       }
    }
 
-   value(){
+   id() { return this.user.id+this.text; }
+
+   /** type = undefined:proposal vote, flag: votes for that flag, "end_result": result for the proposal including all votes and flags */
+   value(type){
       let result = 0;
-      for (let v of this.votes) result += v.value;
-      return result;
+      if (type == "end_result"){
+         result = this.value();
+         const stop = this.value(Flags.STOP);
+         const minor = this.value(Flags.MINORITY);
+         if (stop) result -= Math.pow(2,stop);
+         if (minor && minor >= this.votes[undefined].length / 20) {
+            let has_minus = false;
+            for (let v of this.votes[undefined]) if (v.v < 0) {has_minus = true; break;}
+            return has_minus? 0 : result;
+         }
+         return result;
+
+      } else if (this.votes[type]){
+         for (let v of this.votes[type]) result += v.v;
+         return result;
+
+      } else if (type == undefined) {
+         return 0;
+
+      } else {
+         return undefined;
+      }
+   }
+}
+
+class Vote {
+   /** type = undefined or a flag*/
+   constructor(user, v, type){
+      this.user = user;
+      this.type = type;
+      this.v = v;
    }
 }
 
 function proposal_sort(a, b) {
-   if (a.value() < b.value()) return 1;
-   if (a.value() > b.value()) return -1;
+   if (a.value("end_result") < b.value("end_result")) return 1;
+   if (a.value("end_result") > b.value("end_result")) return -1;
    return 0;
 }
 
@@ -109,6 +143,7 @@ if (typeof module != "undefined") module.exports = {
    User: User,
    Swarm: Swarm,
    Proposal: Proposal,
+   Vote: Vote,
    proposal_sort: proposal_sort,
    Rank: Rank
 };

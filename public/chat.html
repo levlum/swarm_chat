@@ -50,8 +50,9 @@
       .proposal {position: relative; display: flex; gap: 0.5em; align-items: center; transition: all 0.3s;}
       .proposal button svg {width: 1em; height: 0.5em; pointer-events: none;}
       .proposal img {width: 1.5em;}
+      .support {display: flex; flex-direction: column; gap: 0.1em}
       /* .b_flags {position: relative;} */
-      .flags_list {position: absolute; display: flex; top:2.3em; flex-direction: column; background-color: var(--color_main_lighter); border-radius: 7px;}
+      .flags_list {position: absolute; display: flex; gap:0.1em; top:2.3em; flex-direction: column; background-color: var(--color_main_lighter); border-radius: 7px;}
 
       .swarm_list {padding: 0.5em 0; background-color: var(--color_main_lightest); border-radius: 7px; border: 1px solid var(--color_main);}
       .list_entry {display: flex; padding: 0 0.5em; align-items: center; justify-content: space-between; border-bottom: 1px solid white;}
@@ -64,10 +65,13 @@
       .md_header {display: flex; padding: 0.25em 0.5em; justify-content: space-between;  background-color: var(--color_main); color: blanchedalmond; border-radius: 7px 7px 0 0;}
       .md_header h3 {margin: 0.25em 0;}
       .md_content {flex: 1; padding: 0.5em; overflow-y: auto;}
-      .md_buttons {display: flex; align-items: flex-end; gap: 0.5em;}
+      .md_buttons {display: flex; padding: 0.5em; align-items: flex-end; gap: 0.5em;}
 
       .li_img_stop {list-style: none;}
       .li_img_stop::before {content: ''; display: inline-block; margin: -0.5em 0.5em -0.5em -2em; height: 1.5em; width: 1.5em; background-image: url(images/stop.svg); background-size: contain;}
+
+      .li_img_minority {list-style: none;}
+      .li_img_minority::before {content: ''; display: inline-block; margin: -0.5em 0.5em -0.5em -2em; height: 1.5em; width: 1.5em; background-image: url(images/minority.svg); background-size: contain;}
 
 
       .flip-horizontally {transform: scaleX(-1);}
@@ -92,20 +96,26 @@
    </svg>
    <template id="temp_flags_list">
       <div class="flags_list">
-         <button class="b_flag_stop flags_entry"><img src="images/stop.svg"> stop!</button>
-         <button class="b_flag_careful flags_entry"><img src="stop.svg"> be careful!</button>
+         <button class="b_flag_stop flags_entry"><img src="/images/stop.svg"> stop!</button>
+         <button class="b_flag_minority flags_entry"><img src="/images/minority.svg"> be careful!</button>
          <button class="b_flag_cancel flags_entry">cancel</button>
       </div>
-
    </template>
+
    <template id="temp_proposal">
-      <li class="proposal">
+      <li class="proposal" style="transition: all 0.3s;">
          <p class="proposal_text">Das is ein Proposaltext (1)</p>
-         <button class="b_down small_button" ><svg><use xlink:href="#svg_down" /></svg></button>
-         <button class="b_up small_button" ><svg><use xlink:href="#svg_up" /></svg></button>
          <button class="b_flags">flag <svg><use xlink:href="#svg_triangle" /></svg></button>
       </li>
    </template>
+
+   <template id="temp_support">
+      <div class="support">
+         <button class="b_up small_button"><svg><use xlink:href="#svg_up" /></svg></button>
+         <button class="b_down small_button"><svg><use xlink:href="#svg_down" /></svg></button>
+      </div>
+   </template>
+
    <div id="modal_dialog" style="display: none;">
       <div class="md_window">
          <div class="md_header">
