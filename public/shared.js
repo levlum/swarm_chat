@@ -21,14 +21,16 @@ var rankData = [
 
 var Flags = {
    STOP: 0,
-   MINORITY: 1
+   MINORITY: 1,
+   SECOND:2
 }
 
 var flagData = [
    { key: "STOP", img:"/images/stop.svg", info: `Set this only, if a proposal is a:<ul><li style="list-style-image: none;"><strong>lie</strong> or scientifically obvious <strong>wrong</strong> statement.</li>
       <li style="list-style-image: none;"><strong>Troll</strong> message with harmful content.</li>
       <li><strong>Not</strong> if you do not like the proposal.</li></ul>`},
-   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.`}
+   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.` },
+   { key: "SECOND", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.` },
 ]
 
 class User {
