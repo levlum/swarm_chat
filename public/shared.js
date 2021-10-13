@@ -1,4 +1,5 @@
 const question_duration = 60;
+const queen_voting = "queen?";
 
 var Rank = {
    INVISIBLE: 0,
@@ -36,19 +37,22 @@ class User {
          this.name = obj_or_name.name;
          this.swarm = obj_or_name.swarm;
          this.private_id = obj_or_name.private_id;
-         this.is_queen = obj_or_name.is_queen;
+         this.rank = obj_or_name.rank;
+         this.id = obj_or_name.id;
+         this.all_ids = obj_or_name.all_ids;
       } else {
          this.name = obj_or_name;
          this.swarm = swarm;
          this.private_id;
-         this.is_queen;
+         this.rank; //is undefined by default. server sets the rank.
+         this.id;
+         this.all_ids = [];
       }
-
-      this.id;
-      this.rank = Rank.INVISIBLE.key;
-      this.all_ids = []; //the fist socket.id a user gets, is his id. user saves that in local storage. if socket.id changes, those ids are stored here, to find user easily
+ //the fist socket.id a user gets, is his id. user saves that in local storage. if socket.id changes, those ids are stored here, to find user easily
       this.connected = false;
    }
+
+   is_queen() {return (this.rank == Rank.QUEEN);}
 
    for_external_use(){
       const result = {};
@@ -73,6 +77,10 @@ class Swarm {
       this.proposals = [];
    }
 
+   has_active_question(){
+      return (this.question != undefined && this.start != undefined && (Date.now() - this.start) / 1000 < question_duration);
+   }
+
    reset(){
       this.question = undefined;
       this.start = undefined;
@@ -82,7 +90,7 @@ class Swarm {
 
 class Proposal {
    constructor (obj_or_user, text){
-      if (obj_or_user.user) {
+      if (obj_or_user.user!= undefined) {
          this.user = obj_or_user.user;
          this.text = obj_or_user.text;
          this.votes = obj_or_user.votes;
@@ -140,6 +148,7 @@ function proposal_sort(a, b) {
 
 if (typeof module != "undefined") module.exports = {
    question_duration: question_duration,
+   queen_voting: queen_voting,
    User: User,
    Swarm: Swarm,
    Proposal: Proposal,

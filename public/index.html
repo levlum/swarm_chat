@@ -3,6 +3,7 @@
 
 <head>
    <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Swarm Chat</title>
    <style>
       :root {
@@ -31,10 +32,14 @@
       main {display: flex; margin: 4em 5vw;}
       .main_left {display: flex; flex-direction: column; flex: 1;}
       .main_right {display: flex; padding-left: 2em; flex-direction: column; width: 10em;}
+      .black_bg {display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 150; background-color: rgba(0, 0, 0, 0.5);}
 
       header {position: fixed; display: flex; top: 0; width: calc(100vw - 10vw); padding: 0.5em 5vw 0.5em 5vw; margin-bottom: 1em; gap: 1em; align-items: center; border-bottom: 1px solid var(--color_main_darkest); color: white ; background-color: var(--color_main);}
       header h2 {margin: 0;}
       .spaceer {flex: 1;}
+      .login {display: flex; align-items: center; gap: 1em; }
+      .login input {width: 7em;}
+      #b_hamburger {display: none;}
 
       .box {padding: 0 1em; background-color: var(--color_main_lightest); border-radius: 7px; border: 1px solid var(--color_main);}
 
@@ -47,7 +52,7 @@
          font-weight: bold;
          margin-right: 5px;
       }
-      .proposal {position: relative; display: flex; gap: 0.5em; align-items: center; transition: all 0.3s;}
+      .proposal {position: relative; display: flex; margin: 0.1em 0; padding: 0 0.5em; gap: 0.5em; align-items: center; border: 1px solid var(--color_main_dark); background-color: var(--color_main_lightest); border-radius: 7px; transition: all 0.3s;}
       .proposal button svg {width: 1em; height: 0.5em; pointer-events: none;}
       .proposal img {width: 1.5em;}
       .support {display: flex; flex-direction: column; gap: 0.1em}
@@ -75,9 +80,16 @@
 
 
       .flip-horizontally {transform: scaleX(-1);}
+      .b_request_queen {display: none; margin-bottom: 2em; background-color: yellow; color: var(--color_main); font-weight: bold; border: 1px solid var(--color_main)}
 
       @media (hover: hover) {
          button:hover:enabled       { background-color: var(--color_main_light);}
+      }
+      @media only screen and (max-width: 600px) {
+         .main_right {display: none;}
+         .login {display: none; position: absolute; padding: 1em; top: 3.2em; left: 0em; flex-direction: column; background-color: var(--color_main); border-radius: 0 0 7px 0; z-index: 202;}
+         #b_hamburger {display: inline-block;}
+         .mobile_hide {display: none;}
       }
    </style>
 </head>
@@ -128,26 +140,30 @@
    </div>
 
    <header>
-      <label class="title" for="usernameInput">Name?</label>
-      <input id="usernameInput" type="text" maxlength="14" />
-      
-      <label class="title" for="swarmnameInput">Swarm?</label>
-      <input id="swarmnameInput" type="text" maxlength="14" />
-      <button class="b_login">join</button>
+      <button id="b_hamburger"><img src="/images/hamburger.svg" style="width: 2em;"></button>
+      <div class="black_bg"></div>
+      <div class="login">
+         <label class="title" for="usernameInput">Name?</label>
+         <input id="usernameInput" type="text" maxlength="14" />
+
+         <label class="title" for="swarmnameInput">Swarm?</label>
+         <input id="swarmnameInput" type="text" maxlength="14" />
+         <button class="b_login">join</button>
+      </div>
       <div class="spaceer"></div>
       <button class="b_info"><img src="/images/info.png" style="width: 2em;"></button>
-      <h2>Lev's Swarm Chat</h2>
+      <h2><span class="mobile_hide">Lev's </span>Swarm Chat</h2>
    </header>
    <main>
       <div class="main_left">
-         <h2>chat with higher intelligence</h2>
+         <!-- <h2>chat with higher intelligence</h2> -->
       
 
          <div class="box">
             <h2 class="swarm title">Swarm</h2>
             <h3 class="queen question">Queens question: please wait for the queen to have a request</h3>
             <h3 class="swarm answer">The swarm is thinking ...</h3>
-            <svg class="timer" viewBox="0 0 100 5" width="20em" height="1em" preserveAspectRatio="xMinYMid slice"></svg>
+            <svg class="timer" viewBox="0 0 100 5" style="width: min(20em, 80vw); height: 1em" preserveAspectRatio="xMinYMid slice"></svg>
          </div>
 
 
@@ -160,12 +176,16 @@
 
          <!-- borg drone-page (initial ausgeblendet) -->
          <div class="drone page">
-            <label for ="droneMessage">Propose an answer in the name of the swarm</label>
-            <input id="droneMessage" placeholder="Type here..." />
-            <button class="b_send_message">absenden</button>
-            <ul class="proposals">
-            </ul>
+            <div class="create_proposal">
+               <label for ="droneMessage">Propose an answer in the name of the swarm</label>
+               <input id="droneMessage" placeholder="Type here..." />
+               <button class="b_send_message">absenden</button>
+            </div>
+            
+            <ul class="proposals"></ul>
          </div>
+
+         <button class="b_request_queen"><img src="/images/queen.png" style="width: 3em;"> request becoming queen.</button>
       </div>
 
       <div class="main_right">

@@ -23,7 +23,7 @@ $(function () {
    var $currentInput = $usernameInput.focus();
 
    // Socket.io Objekt anlegen
-   var socket = io('http://vhjk6s.myvserver.online:3000', {
+   var socket = io('https://swarmchat.org', {
       reconnectionDelay: 1000,
       reconnection: true,
       reconnectionAttemps: 10,
@@ -33,6 +33,13 @@ $(function () {
       rejectUnauthorized: false
    });
 
+
+   // ==================================================
+   // check for small screen size
+   // ==================================================
+   function is_mobile() {
+      return window.matchMedia("only screen and (max-width: 600px)").matches;
+   }
    // ==== Code für Benutzerschnittstelle
 
    // localStorage.removeItem("swarmchat_user");
@@ -40,7 +47,7 @@ $(function () {
    //load data from local storage
    if (localStorage.swarmchat_user != undefined) {
       // console.log(localStorage.swarmchat_user);
-      user = JSON.parse(localStorage.swarmchat_user);
+      user = new User( JSON.parse(localStorage.swarmchat_user));
       $usernameInput.val(user.name);
       $swarmnameInput.val(user.swarm);
       login();
@@ -53,12 +60,34 @@ $(function () {
    $swarmnameInput.on("input", toggle_b_login);
    $swarmnameInput.on("focusout", toggle_b_login);
 
+   $(".b_request_queen").on("click", e => {
+      if (user && logged_in){
+         sendMessage(user.name+" for queen.");
+         $(".b_request_queen").fadeOut();
+      }
+   });
 
+   $("#b_hamburger").on("click", e => {
+      $(".black_bg").fadeIn();
+      $(".login").css({display:"flex"}).fadeIn();
+
+      $(".black_bg").on("click", e => {
+         if (e.target == $(".black_bg")[0]){
+            $(".black_bg").fadeOut();
+            $(".login").fadeOut();
+         }
+      });
+   });
 
    // Benutzername, swarm name wird am server gesetzt
    $(".b_login").on("click", e => {
       if (e.target.textContent == "join") login();
       else socket.emit('remove user', user);
+
+      if (is_mobile()) {
+         $(".login").fadeOut();
+         $(".black_bg").fadeOut();
+      }
    });
 
    $(".queen .b_send_message").on("click", e => {
@@ -90,11 +119,16 @@ $(function () {
              Every additional stop-flag on a proposal dubbles the negative influence.</li><br>
          <li class="li_img_minority" ><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
       </ul>
+      <h3>Background</h3>
+      <p>Nature seems to build <strong>information-networks</strong> whenever possible. Biological cells have an internal exchange of information. Cells structured themselves evolutionary and organised connected life forms like animals and plants. Amimals and plants started building ways of information exchange between individuals with different kinds of language. We are maybe in an exciting time. People start building groups that tend to think as a new combined entity. 
+      Communities are intellectually supperior to individual humans, at least in many ways (Communities can build computers and rockets). The whole world is connected in a way, that every part of that network seems to "feel" what's going on in all other parts of the network. Next generations will remember that as the <strong>times of great pain</strong>. We need to build damping mechanisms. It's hurting to feel everything, way better to feel important and true news only.
+      What's important and what's true can be decided best by many. Nodes of self suffitiant information-networks do not just evaluate and forward information, they do that for mostly chemical reasons (if it comes to biological networks). In technical networks, its algorithms that decide how to evaluate and forward a signal. In the spirit of "digital humanity" the evaluation of signals in human networks has to follow human opinions, feelings and beliefs.
+      </p><p>The <strong>Swarm Chat</strong> is a step in the direction of letting a community think for itself. Results of queen's questions are visible to outsiders in real time. This leads to a feeling of being (part of) an entity and it makes recursive processes possible. The next result will depend on earlier results leading to a loop of internal dependencies (compare cybernetics of second order).</p>
       <h3>Data Protection</h3>
       <p>All data is saved in the swarm. There is no database on the server. No cookies are set. All known data of a drone is stored in the client browser's local storage. This data is being sent to the server in case of a server reboot. All data of past queen's questions and proposals are deleted immediately after sending the result to the swarm.
       In the case of contradicting information of drones, the server uses the information that is sent from more drones or in the case of equal numbers, from the drone that sent the data first.</p>
       <h3>License</h3>
-      <p>created by Lev Lumesberger. Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. if a dicission is contradicting those rights.</strong></p>`,
+      <p>created by Lev Lumesberger. Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. In case a dicission is contradicting those rights.</strong></p>`,
          style: { "margin-top": "5em", width: "80vw" }
       });
    });
@@ -119,6 +153,16 @@ $(function () {
    }
 
 
+   function reset_page() {
+      toggle_b_login();
+      $(".b_login").text("join");
+      $("body").css({ "background-color": "unset" });
+      $(".swarm.title").text("You are a free drone without any swarm.");
+      $(".swarm.answer").text("");
+      $(".queen.question").text("");
+      $(".swarm_list").empty();
+      $(".b_request_queen").hide();
+   }
 
 
    function toggle_b_login(e) {
@@ -141,7 +185,7 @@ $(function () {
 
             user = new User(username, swarmname);
          } else {
-            user = stored_user;
+            user = new User(stored_user);
          }
       } else {
          user = new User(username, swarmname);
@@ -160,13 +204,19 @@ $(function () {
 
    // Chat-Nachricht versenden
    function sendMessage($inputMessage) {
-      let message = $inputMessage.val().trim();
+      let message;
+      if ($inputMessage instanceof jQuery) {
+         message = $inputMessage.val().trim();
+      } else {
+         message = $inputMessage;
+      }
       // Prüfen, ob die Nachricht nicht leer ist und wir verbunden sind.
       if (message && logged_in) {
          // Eingabefeld auf leer setzen
-         $inputMessage.val('');
+         if ($inputMessage instanceof jQuery) $inputMessage.val('');
 
-         add_proposal(new Proposal(user, message));
+         // console.log("usi busi", user);
+         if (!user.is_queen()) add_proposal(new Proposal(user, message));
 
          // Server über neue Nachricht informieren. Der Server wird die Nachricht
          // an alle anderen Clients verteilen.
@@ -176,7 +226,7 @@ $(function () {
 
    function start_timer(start) {
       $(".timer").fadeIn();
-      console.log("start", start);
+      // console.log("start", start);
       const elapsed = (Date.now() - start);
       let left_duration = question_duration * 1000 - elapsed;
 
@@ -188,7 +238,7 @@ $(function () {
       for (let i = 0; i < 10; i++) {
          rects.rect(9, 5).move(i * 10, 0).radius(1).fill("var(--color_main_lighter)").stroke({ width: 0.3, color: "var(--color_main)" });
       }
-      let bar = draw.rect(left_duration / 600, 5).fill("var(--color_main_light)");
+      let bar = draw.rect(100 , 5).fill("var(--color_main_light)");
       bar.maskWith(rects.clone());
 
       bar.animate(left_duration).ease("-").width(0).after(() => { $(".timer").empty() });
@@ -205,13 +255,25 @@ $(function () {
    function start_queens_question(data) {
       if (data.is_queen) {
 
-         log("queens question: " + data.message);
-         $(".queen.question").text(`Queen's Question: ${data.message}`);
-         $(".swarm.answer").fadeIn();
-         if (!user.is_queen) $dronePage.fadeIn();
+         if (data.message == queen_voting) {
+            log("queens question: Who becomes the queen?");
+            $(".queen.question").text(`Queen's Question: Who becomes the queen?`);
+            $(".b_request_queen").fadeIn();
+            $(".create_proposal").fadeOut();
+
+         } else {
+
+            log("queens question: " + data.message);
+            $(".queen.question").text(`Queen's Question: ${data.message}`);
+            $(".create_proposal").fadeIn();
+         }
+
+         $(".swarm.answer").fadeOut();
+         console.log(user);
+         if (!user.is_queen()) $dronePage.fadeIn();
 
          proposals = [];
-         if (user.is_queen) $dronePage.fadeOut();
+         if (user.is_queen()) $dronePage.fadeOut();
          $proposals.empty();
          start_timer(data.start);
 
@@ -226,14 +288,15 @@ $(function () {
    }
 
    function add_proposal(proposal) {
-      if (user.is_queen) return;
+      if (user.is_queen()) return;
 
       //existing proposal?
       proposal = new Proposal(proposal);
+      console.log(proposal.id(), proposal);
       let existing = false;
       for (let i = 0; i < proposals.length; i++) {
          let old_p = proposals[i];
-         if (old_p.text == proposal.text && old_p.user_id == proposal.user_id) {
+         if (old_p.id() == proposal.id()) {
             proposals[i] = proposal;
             existing = true;
             break;
@@ -252,14 +315,15 @@ $(function () {
 
       proposals.forEach((p, i) => {
          let $proposal = $(`.proposal[data-id="${p.id()}"]`);
+         // let $template = document.querySelector('#temp_proposal').content;
          if ($proposal.length == 0) {
             $proposals.append($($("#temp_proposal").html()).attr("data-id", p.id()));
             $proposal = $(`.proposal[data-id="${p.id()}"]`);
             console.log("created new proposal.");
          } else {
-            console.log("found old proposal.", $("#temp_proposal").eq(0).html());
+            // console.log("found old proposal.", $($("#temp_proposal").html()).html());
             $proposal.empty();
-            $proposal.append($("#temp_proposal").eq(0).html());
+            $proposal.append($($("#temp_proposal").html()).html());
          }
          
          // console.log($proposal);
@@ -317,11 +381,22 @@ $(function () {
       });
    }
 
+   function setup_queen(){
+      $queenPage.fadeIn();
+      $("body").css({ "background-color": "var(--color_queen)" });
+      $(".queen.question").text("Please send a question to the swarm!");
+      $(".swarm.title").text(`You are the queen of ${user.swarm}.`);
+   }
+
+   function update_userlist(drone) {
+      let $user_div = $(`.list_entry[data-user_id="${drone.id}"]`);
+      $user_div.find("img").attr("src", `images/${drone.rank == Rank.QUEEN ? "queen" : "bee"}.png` );
+   }
    function append_to_userlist(drone) {
-      let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.is_queen ? "queen" : "bee"}.png"></div>`);
+      let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.rank == Rank.QUEEN ? "queen" : "bee"}.png"></div>`);
       $joined_user_div.data("user", drone);
       $(".swarm_list").append($joined_user_div);
-      log(drone.name + ' joined as ' + (drone.is_queen ? "queen" : "drone"));
+      log(drone.name + ' joined as ' + (drone.rank == Rank.QUEEN ? "queen" : "drone"));
    }
 
    // ==== Code für Socket.io Events
@@ -337,7 +412,7 @@ $(function () {
 
    // Server schickt "login": Anmeldung war erfolgreich
    socket.on('login', function (data) {
-      user = data.user;
+      user = new User(data.user);
       // console.log("logged in", user);
       log(`${user.name}, welcome to the swarm "${user.swarm}"`);
       logged_in = true;
@@ -345,16 +420,14 @@ $(function () {
       localStorage.swarmchat_user = JSON.stringify(user);
       $(".b_login").text("leave");
 
-      $(".swarm.title").text(`You are ${user.is_queen ? "the queen of" : "a drone in"} the swarm ${user.swarm}`);
+      $(".swarm.title").text(`You are ${user.is_queen() ? "the queen of" : "a drone in"} the swarm ${user.swarm}`);
       $(".swarm_list").empty();
       append_to_userlist(user);
       for (let drone of data.drones) append_to_userlist(drone);
 
 
-      if (user.is_queen) {
-         $queenPage.fadeIn();
-         $("body").css({ "background-color": "var(--color_queen)" });
-         $(".queen.question").text("Please send a question to the swarm!");
+      if (user.is_queen()) {
+         setup_queen();
       } else {
 
          if (data.question) {
@@ -365,13 +438,10 @@ $(function () {
 
    socket.on('logout', () => {
       log(user.name + " left");
-      toggle_b_login();
-      $(".b_login").text("join");
-      $("body").css({ "background-color": "unset" });
       logged_in = false;
       localStorage.removeItem("swarmchat_user");
-      $(".swarm.title").text("You are a free drone without any swarm.");
-      $(".queen.question").text("");
+
+      reset_page();
    });
 
    // Server schickt "new message": Neue Nachricht zum Chat-Protokoll hinzufügen
@@ -383,9 +453,17 @@ $(function () {
       start_queens_question(data);
    });
    socket.on('answer', function (data) {
-      let text = `The swarm's answer: "${data.answer}" given by the famous ${data.user.name}`;
-      $(".swarm.answer").text(text);
+      let text = `The swarm's answer: "${data.answer}"`;
+      if (data.proposal != undefined && data.question != queen_voting) text += ` (by the famous ${data.proposal.user.name})`;
+      else if (data.proposal != undefined && data.question == queen_voting && data.proposal.user.id == user.id) {
+         user.rank = Rank.QUEEN;
+         localStorage.swarmchat_user = JSON.stringify(user);
+         setup_queen();
+      }
+      $(".swarm.answer").text(text).fadeIn();
       $dronePage.fadeOut();
+      $(".b_request_queen").hide();
+      $(".timer").empty();
       log(text);
    });
    socket.on('proposal', add_proposal);
