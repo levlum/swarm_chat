@@ -138,7 +138,7 @@ $(function () {
    function modal_dialog(data) {
       console.log(data);
       if (data.style) $(".md_window").css(data.style);
-      $(".md_header h3").text(data.title);
+      $(".md_header h3").html(data.title);
       $(".md_content").html(data.content);
       $(".md_buttons").empty().hide();
       if (data.buttons) {
@@ -238,7 +238,7 @@ $(function () {
       for (let i = 0; i < 10; i++) {
          rects.rect(9, 5).move(i * 10, 0).radius(1).fill("var(--color_main_lighter)").stroke({ width: 0.3, color: "var(--color_main)" });
       }
-      let bar = draw.rect(100 , 5).fill("var(--color_main_light)");
+      let bar = draw.rect((left_duration / (question_duration * 10)) , 5).fill("var(--color_main_light)");
       bar.maskWith(rects.clone());
 
       bar.animate(left_duration).ease("-").width(0).after(() => { $(".timer").empty() });
@@ -341,35 +341,64 @@ $(function () {
          
          $proposal.find(".b_up").on("click", e => {
             $(e.target).prop('disabled', true);
-            let type = $(e.target).closest(".support").data("type");
+            let type = $(e.target).closest(".support").data("type") || "text";
             socket.emit("proposal vote", new Vote(user, 1, type), p);
          });
          $proposal.find(".b_down").on("click", e => {
             $(e.target).prop('disabled', true);
-            let type = $(e.target).closest(".support").data("type");
+            let type = $(e.target).closest(".support").data("type") || "text";
             socket.emit("proposal vote", new Vote(user, -1, type), p);
          });
 
-         $proposal.find(".b_flags").on("click", e => {
-            let list = $($("#temp_flags_list").html(), { id: "l_flags_" + i });
-            // list.offset($(e.target).offset());
-            $(e.target.parentElement).append(list);
-            list.css({ left: $(e.target).position().left });
-
-            $(".flags_entry").on("click", e => { list.fadeOut(300, () => { list.remove(); }) });
-            $(".b_flag_stop").on("click", e => {
-               modal_dialog({ title: "Stop flag", content: flagData[Flags.STOP].info, 
-                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.STOP), p); } }, { text: "cancel" }]
-               });
-            });
-
-            $(".b_flag_minority").on("click", e => {
-               modal_dialog({
-                  title: "Minority flag", content: flagData[Flags.MINORITY].info,
-                  buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.MINORITY), p); } }, { text: "cancel" }]
-               });
-            });
+         let $flags = $proposal.find(".b_flags");
+         $(".flags_top").on("touch", e => {
+            $(e.target).css({height: "-100%", opacity:0});
          });
+         $(".b_flags").on("mouseenter", function(e) {
+            //remove top to show the flags
+            $(this).find(".flags_top").css({ bottom: "-100%", opacity: 0 });
+            // $(this).find(".flags_top").fadeOut();
+         });
+         $(".b_flags").on("mouseleave", function(e) {
+            $(this).find(".flags_top").css({ bottom: "0", opacity: 1 });
+            $(this).find(".flags_top").fadeIn();
+         });
+         // .on("click", e => {
+         //    let $list = $(`<div class="flags_list">`);
+         //    $(e.target.parentElement).append($list);
+            for (const flag of flagData){
+               //TODO test, if flag == SECOND and if questin is queen_voting: then do not add this flag.
+               
+               if (p.value(Flags[flag.key]) == undefined){
+                  $flags.prepend(`<button class="b_flag_${flag.key} flags_entry"><img src="${flag.img}"></button>`);
+                  $(`.b_flag_${flag.key}`).on("click", e => {
+                     modal_dialog({
+                        title: `<img src="${flag.img}"> ${flag.key} flag`, content: flag.info,
+                        buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags[flag.key]), p); } }, { text: "cancel" }]
+                     });
+                  });
+               }
+            }
+            // $list.append(`<button class="b_flag_cancel flags_entry">cancel</button>`);
+            // $list.css({ left: $(e.target).position().left });
+
+         $(".flags_entry").on("click", function (e) { $(".flags_entry").find(".flags_top").css({ bottom: "0", opacity: 1 }); });
+
+            // let list = $($("#temp_flags_list").html(), { id: "l_flags_" + i });
+            // list.offset($(e.target).offset());
+            // $(".b_flag_stop").on("click", e => {
+            //    modal_dialog({ title: "Stop flag", content: flagData[Flags.STOP].info, 
+            //       buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.STOP), p); } }, { text: "cancel" }]
+            //    });
+            // });
+
+            // $(".b_flag_minority").on("click", e => {
+            //    modal_dialog({
+            //       title: "Minority flag", content: flagData[Flags.MINORITY].info,
+            //       buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags.MINORITY), p); } }, { text: "cancel" }]
+            //    });
+            // });
+         // });
 
          for (const [key, v] of Object.entries (p.votes)) {
             if (v.user_id == user.id) {
@@ -453,9 +482,14 @@ $(function () {
       start_queens_question(data);
    });
    socket.on('answer', function (data) {
-      let text = `The swarm's answer: "${data.answer}"`;
-      if (data.proposal != undefined && data.question != queen_voting) text += ` (by the famous ${data.proposal.user.name})`;
-      else if (data.proposal != undefined && data.question == queen_voting && data.proposal.user.id == user.id) {
+      let text = `The swarm's answer: `;
+      if (data.proposals != undefined && data.question != queen_voting) {
+         for (let i = 0; i < data.proposals.length; i++) {
+            text += (i == 0 ? "" : "\nand: ") + `${data.proposals[i].text} (by the famous ${data.proposals[0].user.name})`;
+         }
+
+      } else if (data.proposals != undefined && data.proposals.length==1 && data.question == queen_voting && data.proposals[0].user.id == user.id) {
+         text += `${data.proposals[0].user.name} is new queen.`;
          user.rank = Rank.QUEEN;
          localStorage.swarmchat_user = JSON.stringify(user);
          setup_queen();
@@ -466,6 +500,7 @@ $(function () {
       $(".timer").empty();
       log(text);
    });
+
    socket.on('proposal', add_proposal);
 
    // Server schickt "user joined": Neuen Benutzer im Chat-Protokoll anzeigen
