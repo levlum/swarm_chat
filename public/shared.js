@@ -105,10 +105,10 @@ class Proposal {
 
    id() { return this.user.id+this.text; }
 
-   /** type = "text": vote for text of proposal, flag: votes for that flag, "end_result": result for the proposal including all votes and flags */
+   /** type = "text": vote for text of proposal, flag: votes for that flag, undefined: result for the proposal including all votes and flags (except SECOND-flag) */
    value(type){
       let result = 0;
-      if (type == "end_result"){
+      if (type == undefined){
          result = this.value("text");
          const stop = Math.max(0, this.value(Flags.STOP));
          const minor = this.value(Flags.MINORITY);
@@ -144,8 +144,8 @@ class Vote {
 }
 
 function proposal_sort(a, b) {
-   if (a.value("end_result") < b.value("end_result")) return 1;
-   if (a.value("end_result") > b.value("end_result")) return -1;
+   if (a.value() < b.value()) return 1;
+   if (a.value() > b.value()) return -1;
    return 0;
 }
 

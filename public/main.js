@@ -334,19 +334,21 @@ $(function () {
                $proposal.prepend(`<img src="${flagData[flag].img}">(${p.value(flag)})`);
             }
          }
-         let value = p.value("end_result");
+         let value = p.value();
          $proposal.css({"margin-left": value+"em"});
          $proposal.find(".proposal_text").text(`${p.text} (${value})`);
          $proposal.find(".proposal_text").after($("#temp_support").html());
          
          $proposal.find(".b_up").on("click", e => {
             $(e.target).prop('disabled', true);
-            let type = $(e.target).closest(".support").data("type") || "text";
+            let type = $(e.target).closest(".support").data("type");
+            if (type == undefined) type = "text";
             socket.emit("proposal vote", new Vote(user, 1, type), p);
          });
          $proposal.find(".b_down").on("click", e => {
             $(e.target).prop('disabled', true);
-            let type = $(e.target).closest(".support").data("type") || "text";
+            let type = $(e.target).closest(".support").data("type");
+            if (type == undefined) type = "text";
             socket.emit("proposal vote", new Vote(user, -1, type), p);
          });
 
@@ -403,8 +405,8 @@ $(function () {
          for (const [key, v] of Object.entries (p.votes)) {
             if (v.user_id == user.id) {
                //allready voted
-               if (v.value == 1) $proposal.find(`.support${key == undefined? "" :`[data-type="${key}"]`} .b_up`).prop('disabled', true);
-               else $proposal.find(`.support${key == undefined ? "" : `[data-type="${key}"]`} .b_down`).prop('disabled', true);
+               if (v.value == 1) $proposal.find(`.support${key == "text"? "" :`[data-type="${key}"]`} .b_up`).prop('disabled', true);
+               else $proposal.find(`.support${key == "text" ? "" : `[data-type="${key}"]`} .b_down`).prop('disabled', true);
             }
          }
       });
@@ -485,7 +487,7 @@ $(function () {
       let text = `The swarm's answer: `;
       if (data.proposals != undefined && data.question != queen_voting) {
          for (let i = 0; i < data.proposals.length; i++) {
-            text += (i == 0 ? "" : "\nand: ") + `${data.proposals[i].text} (by the famous ${data.proposals[0].user.name})`;
+            text += (i == 0 ? "" : "\nand: ") + `${data.proposals[i].text} (by the famous ${data.proposals[i].user.name})`;
          }
 
       } else if (data.proposals != undefined && data.proposals.length==1 && data.question == queen_voting && data.proposals[0].user.id == user.id) {
