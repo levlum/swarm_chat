@@ -98,6 +98,20 @@ $(function () {
       sendMessage($droneMessage);
    });
 
+   //open close log
+   $(".b_open_close_log").on("click", e => {
+      if (window.getComputedStyle(e.target.parentElement).bottom == "0px") {
+         e.target.parentElement.style.bottom = "-7em";
+         $("#log_svg_up").show();
+         $("#log_svg_down").hide();
+
+      } else {
+         e.target.parentElement.style.bottom = "0px";
+         $("#log_svg_up").hide();
+         $("#log_svg_down").show();
+      }
+   });
+
    $(".b_info").on("click", e => {
       let ranks_html = "";
       for (const rank of rankData) { ranks_html += `<li><strong>${rank.key}</strong>: ${rank.info}</li>`; };

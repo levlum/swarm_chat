@@ -64,8 +64,12 @@
       .list_entry {display: flex; padding: 0 0.5em; align-items: center; justify-content: space-between; border-bottom: 1px solid white;}
       .list_entry img {width: 1.5em;}
 
-      .log {position: fixed; padding: 0.5em 1em; bottom: 0; width: 100vw; height: 7em; overflow-y: auto; background-color: lightgray; border-top: 1px solid black;}
+      .log {position: fixed; padding: 0.5em 1em; bottom: -7em; width: 100vw; height: 7em; overflow-y: auto; overflow: visible; background-color: lightgray; border-top: 1px solid black; transition: all 0.3s;}
       .log p {margin: 0;}
+      #log_svg_down {display: none;}
+      .b_open_close_log {position: absolute; top: -0.75em; right: 5em;}
+      .b_open_close_log svg {width: 2em; height: 1em; pointer-events: none;}
+
       #modal_dialog {position: fixed; top:0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.5); z-index: 101;}
       .md_window {display: flex; position: relative; flex-direction: column; margin: 30vh auto; width: 20em; max-height: 80vh; background-color: blanchedalmond; border-radius: 7px;}
       .md_header {display: flex; padding: 0.25em 0.5em; justify-content: space-between;  background-color: var(--color_main); color: blanchedalmond; border-radius: 7px 7px 0 0;}
@@ -90,8 +94,11 @@
       @media only screen and (max-width: 600px) {
          .main_right {display: none;}
          .login {display: none; position: absolute; padding: 1em; top: 3.2em; left: 0em; flex-direction: column; background-color: var(--color_main); border-radius: 0 0 7px 0; z-index: 202;}
+         .login input {font-size: 1em;}
          #b_hamburger {display: inline-block;}
          .mobile_hide {display: none;}
+         h2 {font-size: 1.2em;}
+         h3 {font-size: 1em;}
       }
    </style>
 </head>
@@ -105,7 +112,10 @@
          <polyline points="0,40 50,10 100,40" fill="none" stroke="white" stroke-width="10" />
       </symbol>
       <symbol id="svg_triangle" viewBox="0 0 100 50" preserveAspectRatio="xMinYMid slice">
-         <polyline points="0,10 50,40 100,10" fill="white" stroke="white" stroke-width="10" />
+         <polyline points="0,10 50,40 100,10" fill="white" stroke="none" stroke-width="0" />
+      </symbol>
+      <symbol id="svg_triangle_up" viewBox="0 0 100 50" preserveAspectRatio="xMinYMid slice">
+         <polyline points="0,40 50,10 100,40" fill="white" stroke="none" stroke-width="0" />
       </symbol>
    </svg>
 
@@ -190,7 +200,10 @@
       </div>
    </main>
    <div class="log">
-      
+      <button class = "b_open_close_log">
+         <svg id="log_svg_up"><use xlink:href="#svg_triangle_up" /></svg>
+         <svg id="log_svg_down"><use xlink:href="#svg_triangle" /></svg>
+      </button>
    </div>
 
    <!-- Programmcode auf der Client-Seite -->
