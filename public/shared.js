@@ -16,7 +16,7 @@ var rankData = [
    { key:"RESPONSIBLE", info: "A responsible drone flagged succsessfully a proposal." },
    { key:"RESPECTED", info: "A respected drone created a proposal that got at least 5% of the votes." },
    { key:"FAMOUS", info: "Famous drones proposed sucsessfully an answer." },
-   { key:"QUEEN", info: "There is only one Queen." }
+   { key: "QUEEN", info: "There is only one Queen. If the queen leaves the swarm, a new queen is being voted." }
 ];
 
 var Flags = {
