@@ -5,13 +5,33 @@
       <p>Don't read queen's questions as questions to you personally. All questions are addressed to the swarm. Think as a drone, a borg member of a hive-mind. An example: If the queen asks for your name: "What is your name?" Then she wants to know the name of the swarm. The name, the swarm gives itself. The swarm chat is best used with more than seven drones. </p>
       <h3>Ranks</h3>
       <p>A drone can reach ${rankData.length} ranks:</p>
-      <ol>${ranks_html}</ol>
+      <ol>
+         <li><strong>INVISIBLE</strong>: A drone starts invisible.</li>
+         <li><strong>VISIBLE</strong>: Every drone, that supported an accepted proposal gets this promotion.</li>
+         <li><strong>RESPONSIBLE</strong>: A responsible drone flagged succsessfully a proposal.</li>
+         <li><strong>RESPECTED</strong>: A respected drone created a proposal that got at least 5% of the votes.</li>
+         <li><strong>FAMOUS</strong>: Famous drones proposed sucsessfully an answer.</li>
+         <li><strong>QUEEN</strong>: There is only one Queen.</li>
+      </ol>
       <h3>Flags</h3>
       <ul>
-         <li class="li_img_stop" ><strong>${flagData[Flags.STOP].key}</strong><br>${flagData[Flags.STOP].info}
-             Every additional stop-flag on a proposal dubbles the negative influence.</li><br>
-         <li class="li_img_minority" ><strong>${flagData[Flags.MINORITY].key}</strong><br>${flagData[Flags.MINORITY].info}<br>If at least 5% of all drones that voted on this propossal set this flag, it counts as a <strong>minority-proposal</strong>: Then any negative vote sets the whole vote of the proposal to 0.</li>
-         <li class="li_img_second" ><strong>${flagData[Flags.SECOND].key}</strong><br>${flagData[Flags.SECOND].info}</li>
+         <li>
+            <strong>STOP</strong><br>
+            Set this only, if a proposal is a:
+            lie or scientifically obvious wrong statement.
+            Troll message with harmful content.
+            Not if you do not like the proposal.
+            Every additional stop-flag on a proposal dubbles the negative influence.
+         </li>
+         <li>
+            <strong>MINORITY</strong><br>
+            Set this flag only, if a proposal is harmful against a minority.
+            If at least 5% of all drones that voted on this propossal set this flag, it counts as a minority-proposal: Then any negative vote sets the whole vote of the proposal to 0.
+         </li>
+         <li>
+            <strong>SECOND</strong><br>
+            Set this flag if you want a proposalas to be an additional, a second answer. If there are enough votes (votes + flag-votes) this may happen.
+         </li>
       </ul>
       <h3>Background</h3>
       <p>Nature seems to build <strong>information-networks</strong> whenever possible. Biological cells have an internal exchange of information. Cells structured themselves evolutionary and organised connected life forms like animals and plants. Amimals and plants started building ways of information exchange between individuals with different kinds of language. We are maybe in an exciting time. People start building groups that tend to think as a new combined entity. 
