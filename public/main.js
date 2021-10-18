@@ -1,3 +1,11 @@
+/**
+ * Node.js client for swarmchat. (see swarmchat.org)
+ * <p> by Lev Lumesberger.
+ * Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. In case a dicission is contradicting those rights.</strong></p>
+ * based on the turial: "Chat mit Node.js und Socket.io" https://linz.coderdojo.net/uebungsanleitungen/programmieren/web/nodejs-socketio-chat/
+ */
+
+
 
 $(function () {
    // Hilfsvariablen für HTML-Elemente werden mit Hilfe von JQuery gesetzt.
@@ -367,8 +375,10 @@ $(function () {
          });
 
          let $flags = $proposal.find(".b_flags");
-         $(".flags_top").on("touch", e => {
-            $(e.target).css({height: "-100%", opacity:0});
+         $(".flags_top").on("touch", function (e) {
+            if (e.target == this) {
+               $(e.target).css({height: "-100%", opacity:0});
+            }
          });
          $(".b_flags").on("mouseenter", function(e) {
             //remove top to show the flags
@@ -387,11 +397,13 @@ $(function () {
                
                if (p.value(Flags[flag.key]) == undefined){
                   $flags.prepend(`<button class="b_flag_${flag.key} flags_entry"><img src="${flag.img}"></button>`);
-                  $(`.b_flag_${flag.key}`).on("click", e => {
-                     modal_dialog({
-                        title: `<img src="${flag.img}"> ${flag.key} flag`, content: flag.info,
-                        buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags[flag.key]), p); } }, { text: "cancel" }]
-                     });
+                  $(`.b_flag_${flag.key}`).on("click", function (e) {
+                     if (e.target == this){
+                        modal_dialog({
+                           title: `<img src="${flag.img}"> ${flag.key} flag`, content: flag.info,
+                           buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags[flag.key]), p); } }, { text: "cancel" }]
+                        });
+                     }
                   });
                }
             }

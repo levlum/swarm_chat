@@ -1,4 +1,9 @@
-
+/**
+ * Node.js server for swarmchat. (see swarmchat.org)
+ * <p>by Lev Lumesberger.
+ * Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. In case a dicission is contradicting those rights.</strong></p>
+ * based on the turial: "Chat mit Node.js und Socket.io" https://linz.coderdojo.net/uebungsanleitungen/programmieren/web/nodejs-socketio-chat/
+ */
 
 // express und http Module importieren. Sie sind dazu da, die HTML-Dateien
 // aus dem Ordner "public" zu veröffentlichen.
@@ -308,8 +313,13 @@ io.on('connection', function (socket) {
          //Send possible answer to all drones (and queen, but she will not vote).
          let swarm = swarms[user.swarm];
          let proposal = new shared.Proposal(user.for_external_use(), message);
+
+         //a drone automatically votes for his or her own proposal 
+         proposal.votes.push(new shared.Vote(user.for_external_use(), 1, "text"));
+
          console.log("Send possible answer to all drones (and queen, but she will not vote): " + proposal.text);
          swarm.proposals.push(proposal);
+         
          // socket.emit("proposal", proposal);
          socket.to(user.swarm).emit("proposal", proposal);
       }
