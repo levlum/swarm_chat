@@ -239,7 +239,11 @@ $(function () {
          if ($inputMessage instanceof jQuery) $inputMessage.val('');
 
          // console.log("usi busi", user);
-         if (!user.is_queen()) add_proposal(new Proposal(user, message));
+         if (!user.is_queen()) {
+            const p = new Proposal(user.for_external_use(), message);
+            p.add_vote(new Vote(user.for_external_use(), 1, "text"));
+            add_proposal(p);
+         }
 
          // Server über neue Nachricht informieren. Der Server wird die Nachricht
          // an alle anderen Clients verteilen.
@@ -315,7 +319,7 @@ $(function () {
 
       //existing proposal?
       proposal = new Proposal(proposal);
-      console.log(proposal.id(), proposal);
+      // console.log(proposal.id(), proposal);
       let existing = false;
       for (let i = 0; i < proposals.length; i++) {
          let old_p = proposals[i];
@@ -350,15 +354,18 @@ $(function () {
          }
          
          // console.log($proposal);
+         //add flags
          for (const [key, flag] of Object.entries(Flags)){
             if (p.value(flag) != undefined) {
-               let $support = $($("#temp_support").html()).attr("data-type", flag);
+               let $support = $($("#temp_support").html()).attr({ "data-type": flag});
+               $support.find(".b_up").attr({ title: `support ${flagData[flag].key} flag` });
+               $support.find(".b_down").attr({ title: `prevent ${flagData[flag].key} flag` });
                $proposal.prepend($support);
                $proposal.prepend(`<img src="${flagData[flag].img}">(${p.value(flag)})`);
             }
          }
          let value = p.value();
-         $proposal.css({"margin-left": value+"em"});
+         $proposal.css({"margin-left": (value - 1)+"em"});
          $proposal.find(".proposal_text").text(`${p.text} (${value})`);
          $proposal.find(".proposal_text").after($("#temp_support").html());
          
@@ -375,9 +382,11 @@ $(function () {
             socket.emit("proposal vote", new Vote(user, -1, type), p);
          });
 
+         //flags menu
          let $flags = $proposal.find(".b_flags");
          $(".flags_top").on("touch", function (e) {
             if (e.target == this) {
+               //remove top to show the flags
                $(e.target).css({height: "-100%", opacity:0});
             }
          });
@@ -399,6 +408,7 @@ $(function () {
                if (p.value(Flags[flag.key]) == undefined){
                   $flags.prepend(`<button class="b_flag_${flag.key} flags_entry"><img src="${flag.img}"></button>`);
                   $(`.b_flag_${flag.key}`).on("click", function (e) {
+                     console.log(e.target,this);
                      if (e.target == this){
                         modal_dialog({
                            title: `<img src="${flag.img}"> ${flag.key} flag`, content: flag.info,

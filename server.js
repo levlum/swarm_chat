@@ -313,9 +313,8 @@ io.on('connection', function (socket) {
          //Send possible answer to all drones (and queen, but she will not vote).
          let swarm = swarms[user.swarm];
          let proposal = new shared.Proposal(user.for_external_use(), message);
-
          //a drone automatically votes for his or her own proposal 
-         proposal.votes.push(new shared.Vote(user.for_external_use(), 1, "text"));
+         proposal.add_vote(new shared.Vote(user.for_external_use(), 1, "text"));
 
          console.log("Send possible answer to all drones (and queen, but she will not vote): " + proposal.text);
          swarm.proposals.push(proposal);
@@ -354,10 +353,10 @@ io.on('connection', function (socket) {
                      }
                   }
                }
-               if (!found){
-                  if (!p.votes[vote.type]) p.votes[vote.type] = [];
-                  p.votes[vote.type].push(vote);
-               }
+               if (!found) p.add_vote(vote);
+               //    if (!p.votes[vote.type]) p.votes[vote.type] = [];
+               //    p.votes[vote.type].push(vote);
+               // }
 
                if (user.id != p.user.id && vote.v > 0 && vote.type == "text" && p.user.rank < shared.Rank.RESPONSIBLE){
                   //the author of the proposal got a positive vote! promotion!

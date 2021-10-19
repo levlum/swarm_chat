@@ -103,6 +103,11 @@ class Proposal {
       }
    }
 
+   add_vote(vote){
+      if (!this.votes[vote.type]) this.votes[vote.type] = [];
+      this.votes[vote.type].push(vote);
+   }
+
    id() { return this.user.id+this.text; }
 
    /** type = "text": vote for text of proposal, flag: votes for that flag, undefined: result for the proposal including all votes and flags (except SECOND-flag) */
@@ -113,7 +118,8 @@ class Proposal {
          const stop = Math.max(0, this.value(Flags.STOP));
          const minor = this.value(Flags.MINORITY);
          // const second = this.value(Flags.SECOND);
-         if (stop) result -= Math.pow(2,stop);
+         // console.log(`stop: ${stop}, text: ${result}, result: ${result - (Math.pow(2, stop) + 1)}`);
+         if (stop) result -= Math.pow(2,stop) + 1;
          if (minor && minor >= this.votes["text"].length / 20) {
             let has_minus = false;
             for (let v of this.votes["text"]) if (v.v < 0) {has_minus = true; break;}
