@@ -2,6 +2,12 @@
 <html lang="de">
 
 <head>
+   <!--
+ * Node.js client (html) for swarmchat. (see swarmchat.org)
+ * by Lev Lumesberger
+ * Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. In case a dicission is contradicting those rights.</strong></p>
+ * based on the turial: "Chat mit Node.js und Socket.io" https://linz.coderdojo.net/uebungsanleitungen/programmieren/web/nodejs-socketio-chat/
+   -->
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Swarm Chat</title>
@@ -53,22 +59,28 @@
          margin-right: 5px;
       }
       .proposal {position: relative; display: flex; margin: 0.1em 0; padding: 0 0.5em; gap: 0.5em; align-items: center; border: 1px solid var(--color_main_dark); background-color: var(--color_main_lightest); border-radius: 7px; transition: all 0.3s;}
-      .proposal button svg {width: 1em; height: 0.5em; pointer-events: none;}
-      .proposal img {width: 1.5em;}
+      .proposal svg {width: 1em; height: 0.5em; pointer-events: none;}
+      .proposal img {width: 1.5em; pointer-events: none;}
       .support {display: flex; flex-direction: column; gap: 0.1em}
-      /* .b_flags {position: relative;} */
+      .b_flags {position: relative;}
+      .flags_top {display: flex; position: absolute; bottom:0; left:0; width: 100%; height: 100%; gap:0.2em; justify-content: center; align-items: center; border-radius: 7px; color: white; background-color: var(--color_main_light); transition: all 0.2s;}
       .flags_list {position: absolute; display: flex; gap:0.1em; top:2.3em; flex-direction: column; background-color: var(--color_main_lighter); border-radius: 7px;}
 
       .swarm_list {padding: 0.5em 0; background-color: var(--color_main_lightest); border-radius: 7px; border: 1px solid var(--color_main);}
       .list_entry {display: flex; padding: 0 0.5em; align-items: center; justify-content: space-between; border-bottom: 1px solid white;}
       .list_entry img {width: 1.5em;}
 
-      .log {position: fixed; padding: 0.5em 1em; bottom: 0; width: 100vw; height: 7em; overflow-y: auto; background-color: lightgray; border-top: 1px solid black;}
+      .log {position: fixed; padding: 0.5em 1em; bottom: -7em; width: 100vw; height: 7em; overflow-y: auto; overflow: visible; background-color: lightgray; border-top: 1px solid black; transition: all 0.3s;}
       .log p {margin: 0;}
+      #log_svg_down {display: none;}
+      .b_open_close_log {position: absolute; top: -0.75em; right: 5em;}
+      .b_open_close_log svg {width: 2em; height: 1em; pointer-events: none;}
+
       #modal_dialog {position: fixed; top:0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.5); z-index: 101;}
       .md_window {display: flex; position: relative; flex-direction: column; margin: 30vh auto; width: 20em; max-height: 80vh; background-color: blanchedalmond; border-radius: 7px;}
       .md_header {display: flex; padding: 0.25em 0.5em; justify-content: space-between;  background-color: var(--color_main); color: blanchedalmond; border-radius: 7px 7px 0 0;}
       .md_header h3 {margin: 0.25em 0;}
+      .md_header h3 img {width: 1em;}
       .md_content {flex: 1; padding: 0.5em; overflow-y: auto;}
       .md_buttons {display: flex; padding: 0.5em; align-items: flex-end; gap: 0.5em;}
 
@@ -77,6 +89,9 @@
 
       .li_img_minority {list-style: none;}
       .li_img_minority::before {content: ''; display: inline-block; margin: -0.5em 0.5em -0.5em -2em; height: 1.5em; width: 1.5em; background-image: url(images/minority.svg); background-size: contain;}
+
+      .li_img_second {list-style: none;}
+      .li_img_second::before {content: ''; display: inline-block; margin: -0.5em 0.5em -0.5em -2em; height: 1.5em; width: 1.5em; background-image: url(images/second.svg); background-size: contain;}
 
 
       .flip-horizontally {transform: scaleX(-1);}
@@ -88,8 +103,11 @@
       @media only screen and (max-width: 600px) {
          .main_right {display: none;}
          .login {display: none; position: absolute; padding: 1em; top: 3.2em; left: 0em; flex-direction: column; background-color: var(--color_main); border-radius: 0 0 7px 0; z-index: 202;}
+         .login input {font-size: 1em;}
          #b_hamburger {display: inline-block;}
          .mobile_hide {display: none;}
+         h2 {font-size: 1.2em;}
+         h3 {font-size: 1em;}
       }
    </style>
 </head>
@@ -103,28 +121,24 @@
          <polyline points="0,40 50,10 100,40" fill="none" stroke="white" stroke-width="10" />
       </symbol>
       <symbol id="svg_triangle" viewBox="0 0 100 50" preserveAspectRatio="xMinYMid slice">
-         <polyline points="0,10 50,40 100,10" fill="white" stroke="white" stroke-width="10" />
+         <polyline points="0,10 50,40 100,10" fill="white" stroke="none" stroke-width="0" />
+      </symbol>
+      <symbol id="svg_triangle_up" viewBox="0 0 100 50" preserveAspectRatio="xMinYMid slice">
+         <polyline points="0,40 50,10 100,40" fill="white" stroke="none" stroke-width="0" />
       </symbol>
    </svg>
-   <template id="temp_flags_list">
-      <div class="flags_list">
-         <button class="b_flag_stop flags_entry"><img src="/images/stop.svg"> stop!</button>
-         <button class="b_flag_minority flags_entry"><img src="/images/minority.svg"> be careful!</button>
-         <button class="b_flag_cancel flags_entry">cancel</button>
-      </div>
-   </template>
 
    <template id="temp_proposal">
       <li class="proposal" style="transition: all 0.3s;">
          <p class="proposal_text">Das is ein Proposaltext (1)</p>
-         <button class="b_flags">flag <svg><use xlink:href="#svg_triangle" /></svg></button>
+         <div class="b_flags"><div class="flags_top">flag <svg><use xlink:href="#svg_triangle" /></svg></div></div>
       </li>
    </template>
 
    <template id="temp_support">
       <div class="support">
-         <button class="b_up small_button"><svg><use xlink:href="#svg_up" /></svg></button>
-         <button class="b_down small_button"><svg><use xlink:href="#svg_down" /></svg></button>
+         <button class="b_up small_button" title="support this proposal"><svg><use xlink:href="#svg_up" /></svg></button>
+         <button class="b_down small_button" title="prevent this proposal"><svg><use xlink:href="#svg_down" /></svg></button>
       </div>
    </template>
 
@@ -195,7 +209,10 @@
       </div>
    </main>
    <div class="log">
-      
+      <button class = "b_open_close_log">
+         <svg id="log_svg_up"><use xlink:href="#svg_triangle_up" /></svg>
+         <svg id="log_svg_down"><use xlink:href="#svg_triangle" /></svg>
+      </button>
    </div>
 
    <!-- Programmcode auf der Client-Seite -->

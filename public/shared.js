@@ -1,4 +1,4 @@
-const question_duration = 60;
+const question_duration = 90;
 const queen_voting = "queen?";
 
 var Rank = {
@@ -16,19 +16,21 @@ var rankData = [
    { key:"RESPONSIBLE", info: "A responsible drone flagged succsessfully a proposal." },
    { key:"RESPECTED", info: "A respected drone created a proposal that got at least 5% of the votes." },
    { key:"FAMOUS", info: "Famous drones proposed sucsessfully an answer." },
-   { key:"QUEEN", info: "There is only one Queen." }
+   { key: "QUEEN", info: "There is only one Queen. If the queen leaves the swarm, a new queen is being voted." }
 ];
 
 var Flags = {
    STOP: 0,
-   MINORITY: 1
+   MINORITY: 1,
+   SECOND:2
 }
 
 var flagData = [
    { key: "STOP", img:"/images/stop.svg", info: `Set this only, if a proposal is a:<ul><li style="list-style-image: none;"><strong>lie</strong> or scientifically obvious <strong>wrong</strong> statement.</li>
       <li style="list-style-image: none;"><strong>Troll</strong> message with harmful content.</li>
       <li><strong>Not</strong> if you do not like the proposal.</li></ul>`},
-   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is harmful against a minority.`}
+   { key: "MINORITY", img: "/images/minority.svg", info: `Set this flag only, if a proposal is <strong>harmful</strong> against a minority.` },
+   { key: "SECOND", img: "/images/second.svg", info: `Set this flag if you want a proposalas to be an additional, a <strong>second answer</strong>. If there are enough votes (votes + flag-votes) this may happen.` },
 ]
 
 class User {
@@ -97,23 +99,30 @@ class Proposal {
       } else {
          this.user = obj_or_user;
          this.text = text;
-         this.votes = {}; //key is type of vote
+         this.votes = {}; //key is type of vote (flag or "text" )
       }
+   }
+
+   add_vote(vote){
+      if (!this.votes[vote.type]) this.votes[vote.type] = [];
+      this.votes[vote.type].push(vote);
    }
 
    id() { return this.user.id+this.text; }
 
-   /** type = undefined:proposal vote, flag: votes for that flag, "end_result": result for the proposal including all votes and flags */
+   /** type = "text": vote for text of proposal, flag: votes for that flag, undefined: result for the proposal including all votes and flags (except SECOND-flag) */
    value(type){
       let result = 0;
-      if (type == "end_result"){
-         result = this.value();
-         const stop = this.value(Flags.STOP);
+      if (type == undefined){
+         result = this.value("text");
+         const stop = Math.max(0, this.value(Flags.STOP));
          const minor = this.value(Flags.MINORITY);
-         if (stop) result -= Math.pow(2,stop);
-         if (minor && minor >= this.votes[undefined].length / 20) {
+         // const second = this.value(Flags.SECOND);
+         // console.log(`stop: ${stop}, text: ${result}, result: ${result - (Math.pow(2, stop) + 1)}`);
+         if (stop) result -= Math.pow(2,stop) + 1;
+         if (minor && minor >= this.votes["text"].length / 20) {
             let has_minus = false;
-            for (let v of this.votes[undefined]) if (v.v < 0) {has_minus = true; break;}
+            for (let v of this.votes["text"]) if (v.v < 0) {has_minus = true; break;}
             return has_minus? 0 : result;
          }
          return result;
@@ -122,7 +131,7 @@ class Proposal {
          for (let v of this.votes[type]) result += v.v;
          return result;
 
-      } else if (type == undefined) {
+      } else if (type == "text") {
          return 0;
 
       } else {
@@ -141,8 +150,8 @@ class Vote {
 }
 
 function proposal_sort(a, b) {
-   if (a.value("end_result") < b.value("end_result")) return 1;
-   if (a.value("end_result") > b.value("end_result")) return -1;
+   if (a.value() < b.value()) return 1;
+   if (a.value() > b.value()) return -1;
    return 0;
 }
 
@@ -154,5 +163,6 @@ if (typeof module != "undefined") module.exports = {
    Proposal: Proposal,
    Vote: Vote,
    proposal_sort: proposal_sort,
-   Rank: Rank
+   Rank: Rank,
+   Flags: Flags,
 };

@@ -1,4 +1,9 @@
-
+/**
+ * Node.js server for swarmchat. (see swarmchat.org)
+ * <p>by Lev Lumesberger.
+ * Source, mechanics and all creative elements are freely usable under <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a> with one important condition: <br><strong>All decisions are overruled by the human rights charta of the united nations. In case a dicission is contradicting those rights.</strong></p>
+ * based on the turial: "Chat mit Node.js und Socket.io" https://linz.coderdojo.net/uebungsanleitungen/programmieren/web/nodejs-socketio-chat/
+ */
 
 // express und http Module importieren. Sie sind dazu da, die HTML-Dateien
 // aus dem Ordner "public" zu veröffentlichen.
@@ -111,18 +116,35 @@ io.on('connection', function (socket) {
          let data = { question: swarm.question }
          if (swarm.proposals.length > 0){
             swarm.proposals.sort(shared.proposal_sort);
-            let winner = public_ids[swarm.proposals[0].user.id];
-            data.proposal = swarm.proposals[0];
+            let winners = [];
+            data.proposals = [];
+            let min = swarm.proposals[0].value();
+            for (let p of swarm.proposals) {
+               if (p.value() >= min) {
+                  if (message != shared.queen_voting || winners.length == 0){
+                     winners.push (public_ids[p.user.id]);
+                     data.proposals.push(p);
+                  }
+               
+               } else if (message != shared.queen_voting && p.value(shared.Flags.SECOND) != undefined && p.value(shared.Flags.SECOND) > 0) {
+                  //second answer?
+                  let sum = p.value() + p.value(shared.Flags.SECOND);
+                  if (sum >= min) {
+                     winners.push(public_ids[p.user.id]);
+                     data.proposals.push(swarm.proposals[1]);
+                  }
+               }
+            }
 
             if (message == shared.queen_voting) {
                // console.log(swarm.proposals[0], user_list);
-               winner.rank = shared.Rank.QUEEN;
-               swarm.queen = winner;
-               data.answer = `${winner.name} is new queen.` ;
+               winners[0].rank = shared.Rank.QUEEN;
+               swarm.queen = winners[0];
 
             } else {
-               winner.rank = shared.Rank.FAMOUS;
-               data.answer = swarm.proposals[0].text;
+               for (let winner of winners){
+                  winner.rank = shared.Rank.FAMOUS;
+               }
             }
          
          } else {
@@ -291,19 +313,23 @@ io.on('connection', function (socket) {
          //Send possible answer to all drones (and queen, but she will not vote).
          let swarm = swarms[user.swarm];
          let proposal = new shared.Proposal(user.for_external_use(), message);
+         //a drone automatically votes for his or her own proposal 
+         proposal.add_vote(new shared.Vote(user.for_external_use(), 1, "text"));
+
          console.log("Send possible answer to all drones (and queen, but she will not vote): " + proposal.text);
          swarm.proposals.push(proposal);
+         
          // socket.emit("proposal", proposal);
          socket.to(user.swarm).emit("proposal", proposal);
       }
    });
 
    socket.on('proposal vote', (vote, proposal) => {
-      let client_user = vote.user;
-      console.log(`proposal vote from ${client_user.name}: ${proposal.text} vote: ${vote.v}, type: ${vote.type}`);
-      let user = user_list[client_user.private_id];
+      let user = public_ids[vote.user.id];
+      // console.log(`proposal vote from ${user.name}: ${proposal.text} vote: ${vote.v}, type: ${vote.type}`);
 
       if (!user) {
+         console.warn("could not find user:",vote.user);
          add_user(client_user);
          user = user_list[client_user.private_id];
       }
@@ -312,25 +338,27 @@ io.on('connection', function (socket) {
          //check if vote is valid
          let swarm = swarms[user.swarm];
          for (let p of swarm.proposals){
-            if (p.text == proposal.text && p.user.name == proposal.user.name){
+            if (p.text == proposal.text && p.user.id == proposal.user.id){
                let found = false;
                let votes_list = p.votes[vote.type];
                if (votes_list) {
                   for (const v of votes_list){
+                     // console.log((v.user.id == user.id), (v.type == undefined || v.v != 0), v);
                      if (v.user.id == user.id) {
-                        v.v = vote.v;
+                        //info: if type is a Flag with v=0 (first vote for a flag), then that user may not vote for it
+                        if (v.type == "text" || v.v != 0) v.v = vote.v;
                         found = true;
-                        console.log("found old value");
+                        // console.log("found old value", v.v, v.type);
                         break;
                      }
                   }
                }
-               if (!found){
-                  if (!p.votes[vote.type]) p.votes[vote.type] = [];
-                  p.votes[vote.type].push(vote);
-               }
+               if (!found) p.add_vote(vote);
+               //    if (!p.votes[vote.type]) p.votes[vote.type] = [];
+               //    p.votes[vote.type].push(vote);
+               // }
 
-               if (user.id != p.user.id && vote.v > 0 && vote.type == undefined && p.user.rank < shared.Rank.RESPONSIBLE){
+               if (user.id != p.user.id && vote.v > 0 && vote.type == "text" && p.user.rank < shared.Rank.RESPONSIBLE){
                   //the author of the proposal got a positive vote! promotion!
                   public_ids[p.user.id].rank = shared.Rank.RESPONSIBLE;
                }
