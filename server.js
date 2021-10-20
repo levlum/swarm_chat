@@ -59,6 +59,7 @@ io.on('connection', function (socket) {
    /** checks, if there is a queen and no running queen's question */
    /** if so: start request for a new queen */
    function check_for_queen(user) {
+      return;
       if (user == undefined) return;
 
       let queen;
