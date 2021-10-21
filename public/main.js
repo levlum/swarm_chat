@@ -105,6 +105,9 @@ $(function () {
    $(".drone .b_send_message").on("click", e => {
       sendMessage($droneMessage);
    });
+   $droneMessage.on("keyup", function (e){
+      if (e.keyCode === 13) sendMessage($droneMessage);
+   });
 
    //open close log
    $(".b_open_close_log").on("click", e => {
@@ -357,6 +360,7 @@ $(function () {
          //add flags
          for (const [key, flag] of Object.entries(Flags)){
             if (p.value(flag) != undefined) {
+               console.log(`${p.text} has flag ${key}`);
                let $support = $($("#temp_support").html()).attr({ "data-type": flag});
                $support.find(".b_up").attr({ title: `support ${flagData[flag].key} flag` });
                $support.find(".b_down").attr({ title: `prevent ${flagData[flag].key} flag` });
@@ -406,13 +410,14 @@ $(function () {
                //TODO test, if flag == SECOND and if questin is queen_voting: then do not add this flag.
                
                if (p.value(Flags[flag.key]) == undefined){
-                  $flags.prepend(`<button class="b_flag_${flag.key} flags_entry"><img src="${flag.img}"></button>`);
-                  $(`.b_flag_${flag.key}`).on("click", function (e) {
-                     console.log(e.target,this);
+                  const $button = $(`<button class="b_flag_${flag.key} flags_entry"><img src="${flag.img}"></button>`);
+                  $flags.prepend($button);
+                  $button.on("click", function (e) {
                      if (e.target == this){
+                        let prop = p;
                         modal_dialog({
                            title: `<img src="${flag.img}"> ${flag.key} flag`, content: flag.info,
-                           buttons: [{ text: "Set flag", action: () => { socket.emit("proposal vote", new Vote(user, 0, Flags[flag.key]), p); } }, { text: "cancel" }]
+                           buttons: [{ text: "Set flag", action: () => {socket.emit("proposal vote", new Vote(user, 0, Flags[flag.key]), prop); } }, { text: "cancel" }]
                         });
                      }
                   });
@@ -458,11 +463,16 @@ $(function () {
 
    function update_userlist(drone) {
       let $user_div = $(`.list_entry[data-user_id="${drone.id}"]`);
+      let $stars = $user_div.find(".stars");
+      $stars.empty();
+      for (let i = 0; i < drone.rank; i++) { $stars.append(`<img src="images/star.svg">`) }
       $user_div.find("img").attr("src", `images/${drone.rank == Rank.QUEEN ? "queen" : "bee"}.png` );
    }
    function append_to_userlist(drone) {
-      let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<img src="images/${drone.rank == Rank.QUEEN ? "queen" : "bee"}.png"></div>`);
+      let $joined_user_div = $(`<div class="list_entry" data-user_id="${drone.id}">${drone.name}<div class="stars"></div><div class="spacer"></div><img src="images/${drone.rank == Rank.QUEEN ? "queen" : "bee"}.png"></div>`);
       $joined_user_div.data("user", drone);
+      let $stars = $joined_user_div.find(".stars");
+      for (let i=0; i< drone.rank; i++) {$stars.append(`<img src="images/star.svg">`)}
       $(".swarm_list").append($joined_user_div);
       log(drone.name + ' joined as ' + (drone.rank == Rank.QUEEN ? "queen" : "drone"));
    }
@@ -546,13 +556,15 @@ $(function () {
    socket.on('user joined', function (joined_user) {
       if ($(`.list_entry[data-user_id="${joined_user.id}"]`).length == 0) {
          append_to_userlist(joined_user);
+      } else {
+         update_userlist(joined_user);
       }
    });
 
    // Server schickt "user left": Benutzer, der gegangen ist, im Chat-Protokoll anzeigen
    socket.on('user left', function (leaving_user) {
       const $leaving_user_div = $(`.list_entry[data-user_id="${leaving_user.id}"]`);
-      log(leaving_user.name + " left");
+      // log(leaving_user.name + " left");
       console.log("user left:", leaving_user, $leaving_user_div);
       $leaving_user_div.remove();
    });

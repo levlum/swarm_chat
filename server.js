@@ -59,7 +59,6 @@ io.on('connection', function (socket) {
    /** checks, if there is a queen and no running queen's question */
    /** if so: start request for a new queen */
    function check_for_queen(user) {
-      return;
       if (user == undefined) return;
 
       let queen;
@@ -157,7 +156,7 @@ io.on('connection', function (socket) {
          socket.emit("answer", data);
 
          swarm.reset();
-         check_for_queen(user);
+         // check_for_queen(user);
       }, shared.question_duration * 1000);
 
    }
@@ -252,7 +251,7 @@ io.on('connection', function (socket) {
       // console.log("all drones:", drones);
       socket.emit('login', { user: user, question: question_data, drones: drones});
 
-      check_for_queen(user);
+      // check_for_queen(user);
    }
 
    // Funktion, die darauf reagiert, wenn sich ein Benutzer abmeldet.
@@ -274,7 +273,7 @@ io.on('connection', function (socket) {
       addedUser = false;
       socket.emit('logout');
       socket.to(user.swarm).emit("user left", user.for_external_use());
-      check_for_queen(user);
+      // check_for_queen(user);
    });
 
    // Oder Benutzer müssen sich nicht explizit abmelden. "disconnect"
@@ -327,19 +326,21 @@ io.on('connection', function (socket) {
 
    socket.on('proposal vote', (vote, proposal) => {
       let user = public_ids[vote.user.id];
+      proposal = new shared.Proposal(proposal);
       // console.log(`proposal vote from ${user.name}: ${proposal.text} vote: ${vote.v}, type: ${vote.type}`);
 
       if (!user) {
          console.warn("could not find user:",vote.user);
-         add_user(client_user);
-         user = user_list[client_user.private_id];
+         add_user(vote.user);
+         user = user_list[vote.user.private_id];
       }
 
       if (user && !user.is_queen()){
          //check if vote is valid
          let swarm = swarms[user.swarm];
          for (let p of swarm.proposals){
-            if (p.text == proposal.text && p.user.id == proposal.user.id){
+            if (p.id() == proposal.id()){
+               console.log(p.text, proposal.text, p.user.id, proposal.user.id, vote.type);
                let found = false;
                let votes_list = p.votes[vote.type];
                if (votes_list) {
